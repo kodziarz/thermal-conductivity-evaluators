@@ -1,49 +1,26 @@
-enum Cell { CONDUCTOR = 0, GENERATOR = 1 };
+// #define DEBUG
 
+// Cell types values (used in bufInBoard argument)
 #define CELL_CONDUCTOR 0
 #define CELL_GENERATOR 1
 #define CELL_ADIABATIC 2
 #define CELL_DRAIN 3
-// OPTIMIZE global memory coalescence?
 
-// #define DEBUG
-
-const float deltaXY = 1.0;
-const float deltaXY2 = deltaXY * deltaXY;
-const int numTimeSteps = 10000; // Number of time steps to simulate
-
-const float startTemperature = 280.0;
-const float drainTemperature = 280.0;
-
-// material params
-// heat generator
-const float g_m = 1000;
-const float g_rho = 1000; // kg/m^3
-const float g_k = 2000;
-const float g_C_p = 50;  // J/kg*K
-const float g_Q = 60000; // W
-
-const float GENERATOR_ALPHA = g_k / (g_rho * g_C_p * deltaXY2);
-const float GENERATOR_BETA = g_Q / (g_rho * g_C_p);
-
-// heat conductor
-const float c_m = 1000;
-const float c_rho = 1000; // kg/m^3
-const float c_k = 100000;
-const float c_C_p = 5; // J/kg*K
-
-const float CONDUCTOR_ALPHA = c_k / (c_rho * c_C_p * deltaXY2);
-const float CONDUCTOR_BETA = 0;
-
-const float d1 = g_m * g_C_p / (4 * g_k);
-const float d2 = c_m * c_C_p / (4 * c_k);
-const float delta_time = d1 < d2 ? d1 : d2;
-
-const float DRAIN_ALPHA = 100;
-
-#define STRIP_LENGTH 10
-#define WIDTH 130
-#define HEIGHT 258
+// kernel parameters set before compilation
+// simulation parameters
+#define STEPS_NUMBER 0
+#define START_TEMPERATURE 0
+#define DRAIN_TEMPERATURE 0
+#define GENERATOR_ALPHA 0
+#define GENERATOR_BETA 0
+#define CONDUCTOR_ALPHA 0
+#define CONDUCTOR_BETA 0
+#define DRAIN_ALPHA 0
+#define DELTA_TIME 0
+// board shape parameters
+#define WIDTH 0
+#define HEIGHT 0
+#define STRIP_LENGTH 0
 
 // OPTIMIZE use struct as input
 // typedef struct SimulationParams{
@@ -77,8 +54,8 @@ const float DRAIN_ALPHA = 100;
 
 __kernel void simulate_heat(__global const int *bufInBoards,
                             __global float *maxTemperatures,
-                            __global float *foregoingTemperatures,
-                            __global float *newTemperatures
+                            __global float *globalForegoingTemperatures,
+                            __global float *globalNewTemperatures
 #ifdef DEBUG
                             ,
                             __global float *debug
@@ -93,9 +70,9 @@ __kernel void simulate_heat(__global const int *bufInBoards,
   int group_id = get_group_id(0);
   const int boardSize = WIDTH * HEIGHT;
   const int *currentBoard = bufInBoards + group_id * boardSize;
-  float *applicableForegoingTemperatures =
-      foregoingTemperatures + group_id * boardSize;
-  float *applicableNewTemperatures = newTemperatures + group_id * boardSize;
+  float *foregoingTemperatures =
+      globalForegoingTemperatures + group_id * boardSize;
+  float *newTemperatures = globalNewTemperatures + group_id * boardSize;
 
   const int col = get_local_id(0);
   const int global_id = group_id * WIDTH + col;
@@ -134,21 +111,21 @@ __kernel void simulate_heat(__global const int *bufInBoards,
 
   bool isInterior = col != 0 && col != WIDTH - 1;
 
+  // init temperatures tables
   for (int cellIndex = col; cellIndex < boardSize; cellIndex += WIDTH) {
 
     int currentType = currentBoard[cellIndex];
     /*
     Branchless equivalent of:
     temperature = currentType == CELL_DRAIN
-                                ? drainTemperature : startTemperature;
+                                ? DRAIN_TEMPERATURE : START_TEMPERATURE;
     */
     {
-      float temperature = (currentType == CELL_DRAIN) * drainTemperature +
-                          (currentType != CELL_DRAIN) * startTemperature;
-      applicableForegoingTemperatures[cellIndex] = temperature;
-      applicableNewTemperatures[cellIndex] = temperature;
+      float temperature = (currentType == CELL_DRAIN) * DRAIN_TEMPERATURE +
+                          (currentType != CELL_DRAIN) * START_TEMPERATURE;
+      foregoingTemperatures[cellIndex] = temperature;
+      newTemperatures[cellIndex] = temperature;
     }
-
     // other cell types are just border types, so they will not even use the
     // value
   }
@@ -159,53 +136,53 @@ __kernel void simulate_heat(__global const int *bufInBoards,
 
   work_group_barrier(CLK_GLOBAL_MEM_FENCE); // temperatures synchronization
 
-  float maxT = applicableForegoingTemperatures[col];
+  float maxT = foregoingTemperatures[WIDTH + col];
 
-  for (int step = 0; step < numTimeSteps; step++) {
+  for (int step = 0; step < STEPS_NUMBER; step++) {
 
     // perform a step of a simulation
+    if (isInterior) { // but skip border columns
 
-    for (int cellIndex = WIDTH + col; cellIndex < boardSize - WIDTH;
-         cellIndex += WIDTH) {
+      for (int cellIndex = WIDTH + col; cellIndex < boardSize - WIDTH;
+           cellIndex += WIDTH) { // also skipping first and last row
 
-      if (isInterior) {
-        // if not border cell
-        const float foregoingT = applicableForegoingTemperatures[cellIndex];
+        const float foregoingT = foregoingTemperatures[cellIndex];
         float flow = 0;
         int currentColType = currentBoard[cellIndex];
         float beta = (currentColType == CELL_GENERATOR) * GENERATOR_BETA +
                      (currentColType != CELL_GENERATOR) * CONDUCTOR_BETA;
 
         int neighborIndex = cellIndex + WIDTH;
-        flow += (applicableForegoingTemperatures[neighborIndex] - foregoingT) *
+        flow += (foregoingTemperatures[neighborIndex] - foregoingT) *
                 ALPHAS[currentBoard[neighborIndex]][currentColType];
 
         neighborIndex = cellIndex - WIDTH;
-        flow += (applicableForegoingTemperatures[neighborIndex] - foregoingT) *
+        flow += (foregoingTemperatures[neighborIndex] - foregoingT) *
                 ALPHAS[currentBoard[neighborIndex]][currentColType];
 
         neighborIndex = cellIndex + 1;
-        flow += (applicableForegoingTemperatures[neighborIndex] - foregoingT) *
+        flow += (foregoingTemperatures[neighborIndex] - foregoingT) *
                 ALPHAS[currentBoard[neighborIndex]][currentColType];
 
         neighborIndex = cellIndex - 1;
-        flow += (applicableForegoingTemperatures[neighborIndex] - foregoingT) *
+        flow += (foregoingTemperatures[neighborIndex] - foregoingT) *
                 ALPHAS[currentBoard[neighborIndex]][currentColType];
 
-        float temperatureIncrease = delta_time * (flow + beta);
+        float temperatureIncrease = DELTA_TIME * (flow + beta);
 
-        applicableNewTemperatures[cellIndex] = foregoingT + temperatureIncrease;
+        newTemperatures[cellIndex] = foregoingT + temperatureIncrease;
       }
     }
 
     // to that moment foregoingTemperatures have had proper foregoing values
     work_group_barrier(CLK_GLOBAL_MEM_FENCE);
-    // from now the foregoingTemperatures are undefined
+    // from now on the foregoingTemperatures are actually undefined
 
+    // copy data from newTemperatures to foregoingTemperatures
     for (int cellIndex = col + WIDTH; cellIndex < boardSize - WIDTH;
          cellIndex += WIDTH) {
-      float newTemperature = applicableNewTemperatures[cellIndex];
-      applicableForegoingTemperatures[cellIndex] = newTemperature;
+      float newTemperature = newTemperatures[cellIndex];
+      foregoingTemperatures[cellIndex] = newTemperature;
       /*
       Branchless equivalent of:
       if (newTemperature > maxT)
@@ -217,7 +194,8 @@ __kernel void simulate_heat(__global const int *bufInBoards,
 
     work_group_barrier(CLK_GLOBAL_MEM_FENCE);
     // now foregoingTemperatures are well-defined again
-  }
+  } // end of simulation
 
+  // write to output max temperature of a column
   maxTemperatures[global_id] = maxT;
 }
