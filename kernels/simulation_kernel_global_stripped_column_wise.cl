@@ -22,36 +22,6 @@
 #define HEIGHT 0
 #define STRIP_LENGTH 1 // to avoid static code analysis errors due to division
 
-// OPTIMIZE use struct as input
-// typedef struct SimulationParams{
-
-// }__attribute__((packed)) SimulationParams_t;
-
-// void initialize_alphas(float ALPHAS[4][4], const float GENERATOR_ALPHA,
-//                        const float CONDUCTOR_ALPHA, const float DRAIN_ALPHA)
-//                        {
-//   float c_g = (CONDUCTOR_ALPHA + GENERATOR_ALPHA) / 2;
-//   float c_d = (CONDUCTOR_ALPHA + DRAIN_ALPHA) / 2;
-//   float g_d = (GENERATOR_ALPHA + DRAIN_ALPHA) / 2;
-
-//   for (int i = 0; i < 4; i++) {
-//     ALPHAS[CELL_ADIABATIC][i] = 0;
-//     ALPHAS[i][CELL_ADIABATIC] = 0;
-//   }
-//   ALPHAS[CELL_CONDUCTOR][CELL_GENERATOR] = c_g;
-//   ALPHAS[CELL_GENERATOR][CELL_CONDUCTOR] = c_g;
-
-//   ALPHAS[CELL_CONDUCTOR][CELL_DRAIN] = c_d;
-//   ALPHAS[CELL_DRAIN][CELL_CONDUCTOR] = c_d;
-
-//   ALPHAS[CELL_DRAIN][CELL_GENERATOR] = g_d;
-//   ALPHAS[CELL_GENERATOR][CELL_DRAIN] = g_d;
-
-//   ALPHAS[CELL_CONDUCTOR][CELL_CONDUCTOR] = CONDUCTOR_ALPHA;
-//   ALPHAS[CELL_GENERATOR][CELL_GENERATOR] = GENERATOR_ALPHA;
-//   ALPHAS[CELL_DRAIN][CELL_DRAIN] = 0;
-// }
-
 __kernel void simulate_heat(__global const int *bufInBoards,
                             __global float *maxTemperatures,
                             __global float *minTemperatures,
@@ -71,10 +41,10 @@ __kernel void simulate_heat(__global const int *bufInBoards,
   // calculate momory addresses
   int group_id = get_group_id(1);
   const int boardSize = WIDTH * HEIGHT;
-  const int *currentBoard = bufInBoards + group_id * boardSize;
-  float *foregoingTemperatures =
+  __global const int * currentBoard = bufInBoards + group_id * boardSize;
+  __global float *foregoingTemperatures =
       globalForegoingTemperatures + group_id * boardSize;
-  float *newTemperatures = globalNewTemperatures + group_id * boardSize;
+  __global float *newTemperatures = globalNewTemperatures + group_id * boardSize;
 
   // calculate thread's coordinates
   const int stripsPerColumn = (HEIGHT - 2) / STRIP_LENGTH;
@@ -165,7 +135,7 @@ __kernel void simulate_heat(__global const int *bufInBoards,
   debug[global_id] = -10 - currentBoard[col + WIDTH]; // board copied
 #endif
 
-  work_group_barrier(CLK_GLOBAL_MEM_FENCE); // temperatures synchronization
+  barrier(CLK_GLOBAL_MEM_FENCE); // temperatures synchronization
 
   float maxT = foregoingTemperatures[stripStartIndex];
   float minT = foregoingTemperatures[stripStartIndex];
@@ -206,7 +176,7 @@ __kernel void simulate_heat(__global const int *bufInBoards,
     }
 
     // to that moment foregoingTemperatures have had proper foregoing values
-    work_group_barrier(CLK_GLOBAL_MEM_FENCE);
+    barrier(CLK_GLOBAL_MEM_FENCE);
     // from now on the foregoingTemperatures are actually undefined
 
     // copy data from newTemperatures to foregoingTemperatures
@@ -226,7 +196,7 @@ __kernel void simulate_heat(__global const int *bufInBoards,
              (newTemperature <= maxT) * maxT;
     }
 
-    work_group_barrier(CLK_GLOBAL_MEM_FENCE);
+    barrier(CLK_GLOBAL_MEM_FENCE);
     // now foregoingTemperatures are well-defined again
   } // end of simulation
 
