@@ -45,12 +45,14 @@ simulate_heat(__global const cell_type_t *bufInBoards,
   //   debug[0] = -1.0; // started
   // #endif
 
-  // calculate momory addresses
+  // calculate memory addresses
   int group_id = get_group_id(1);
   const int boardSize = WIDTH * HEIGHT;
   __global const cell_type_t *currentBoard = bufInBoards + group_id * boardSize;
   __global const simulation_value_t *startTemperatures =
       bufInStartTemperatures + group_id * boardSize;
+  __global simulation_value_t *finalTemperatures =
+      globalFinalTemperatures + group_id * boardSize;
   __global simulation_value_t *foregoingTemperatures =
       globalForegoingTemperatures + group_id * boardSize;
   __global simulation_value_t *newTemperatures =
@@ -60,11 +62,11 @@ simulate_heat(__global const cell_type_t *bufInBoards,
   const int stripsPerColumn = (HEIGHT - 2) / STRIP_LENGTH;
   const int col = get_local_id(1) + 1;
   const int stripIndex = get_local_id(0);
-  const int global_id =
-      (group_id * (WIDTH - 2) + col - 1) * stripsPerColumn + stripIndex;
+  const int global_id = group_id * (WIDTH - 2) * stripsPerColumn +
+                        stripIndex * (WIDTH - 2) + col - 1;
   const int startRow = stripIndex * STRIP_LENGTH + 1;
   const int stripStartIndex = startRow * WIDTH + col;
-  const int stripEndIndex = stripStartIndex + STRIP_LENGTH * WIDTH;
+  const int stripEndIndex = stripStartIndex + (STRIP_LENGTH - 1) * WIDTH;
 
 #ifdef DEBUG
   debug[global_id] = global_id; // ids calulated successfully
@@ -100,7 +102,7 @@ simulate_heat(__global const cell_type_t *bufInBoards,
 
   // init temperatures tables
 
-  for (int cellIndex = stripStartIndex; cellIndex < stripEndIndex;
+  for (int cellIndex = stripStartIndex; cellIndex <= stripEndIndex;
        cellIndex += WIDTH) {
 
     cell_type_t currentType = currentBoard[cellIndex];
@@ -113,20 +115,36 @@ simulate_heat(__global const cell_type_t *bufInBoards,
   if (stripIndex == 0) {
     foregoingTemperatures[stripStartIndex - WIDTH] =
         startTemperatures[stripStartIndex - WIDTH];
-  } else if (stripIndex == stripsPerColumn - 1) {
+    newTemperatures[stripStartIndex - WIDTH] =
+        startTemperatures[stripStartIndex -
+                          WIDTH]; // to read a meaningful border minimal
+                                  // temperature later
+  }
+  if (stripIndex == stripsPerColumn - 1) {
     foregoingTemperatures[stripEndIndex + WIDTH] =
-        startTemperatures[stripStartIndex + WIDTH];
+        startTemperatures[stripEndIndex + WIDTH];
+    newTemperatures[stripStartIndex - WIDTH] =
+        startTemperatures[stripStartIndex -
+                          WIDTH]; // to read a meaningful border
+                                  // minimal temperature later
   }
 
   if (col == 1) {
     for (int cellIndex = stripStartIndex - 1; cellIndex <= stripEndIndex - 1;
          cellIndex += WIDTH) {
       foregoingTemperatures[cellIndex] = startTemperatures[cellIndex];
+      newTemperatures[cellIndex] =
+          startTemperatures[cellIndex]; // to read a meaningful border minimal
+                                        // temperature later
     }
-  } else if (col == WIDTH - 2) {
+  }
+  if (col == WIDTH - 2) {
     for (int cellIndex = stripStartIndex + 1; cellIndex <= stripEndIndex + 1;
          cellIndex += WIDTH) {
       foregoingTemperatures[cellIndex] = startTemperatures[cellIndex];
+      newTemperatures[cellIndex] =
+          startTemperatures[cellIndex]; // to read a meaningful border minimal
+                                        // temperature later
     }
   }
 
@@ -210,8 +228,30 @@ simulate_heat(__global const cell_type_t *bufInBoards,
   // write to outputs of a strip
   for (int cellIndex = stripStartIndex; cellIndex <= stripEndIndex;
        cellIndex += WIDTH) {
-    globalFinalTemperatures[group_id * boardSize + cellIndex] =
-        newTemperatures[cellIndex];
+    finalTemperatures[cellIndex] = newTemperatures[cellIndex];
+  }
+
+  // write to outputs neigtbors if necessary
+  if (stripIndex == 0) {
+    finalTemperatures[stripStartIndex - WIDTH] =
+        newTemperatures[stripStartIndex - WIDTH];
+  }
+  if (stripIndex == stripsPerColumn - 1) {
+    finalTemperatures[stripEndIndex + WIDTH] =
+        newTemperatures[stripEndIndex + WIDTH];
+  }
+
+  if (col == 1) {
+    for (int cellIndex = stripStartIndex - 1; cellIndex <= stripEndIndex - 1;
+         cellIndex += WIDTH) {
+      finalTemperatures[cellIndex] = newTemperatures[cellIndex];
+    }
+  }
+  if (col == WIDTH - 2) {
+    for (int cellIndex = stripStartIndex + 1; cellIndex <= stripEndIndex + 1;
+         cellIndex += WIDTH) {
+      finalTemperatures[cellIndex] = newTemperatures[cellIndex];
+    }
   }
 
   globalMaxTemperatures[global_id] = maxT;
