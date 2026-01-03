@@ -10,8 +10,6 @@
 // simulation parameters
 #define STEPS_NUMBER 0
 #define ETA 0
-#define START_TEMPERATURE 0
-#define DRAIN_TEMPERATURE 0
 #define GENERATOR_ALPHA 0
 #define GENERATOR_BETA 0
 #define CONDUCTOR_ALPHA 0
@@ -117,34 +115,36 @@ simulate_heat(__global const cell_type_t *bufInBoards,
         startTemperatures[stripStartIndex - WIDTH];
     newTemperatures[stripStartIndex - WIDTH] =
         startTemperatures[stripStartIndex -
-                          WIDTH]; // to read a meaningful border minimal
-                                  // temperature later
+                          WIDTH]; // for correctness of returned border T
   }
   if (stripIndex == stripsPerColumn - 1) {
     foregoingTemperatures[stripEndIndex + WIDTH] =
         startTemperatures[stripEndIndex + WIDTH];
-    newTemperatures[stripStartIndex - WIDTH] =
-        startTemperatures[stripStartIndex -
-                          WIDTH]; // to read a meaningful border
-                                  // minimal temperature later
+    newTemperatures[stripEndIndex + WIDTH] =
+        startTemperatures[stripEndIndex +
+                          WIDTH]; // for correctness of returned border T
   }
 
   if (col == 1) {
-    for (int cellIndex = stripStartIndex - 1; cellIndex <= stripEndIndex - 1;
-         cellIndex += WIDTH) {
+    // starting from row above and ending a row below, to cover corners
+    // (theoretically not necessary, but done for the sake of correctness of
+    // returned border minimal temperature)
+    for (int cellIndex = stripStartIndex - 1 - WIDTH;
+         cellIndex <= stripEndIndex + WIDTH - 1; cellIndex += WIDTH) {
       foregoingTemperatures[cellIndex] = startTemperatures[cellIndex];
       newTemperatures[cellIndex] =
-          startTemperatures[cellIndex]; // to read a meaningful border minimal
-                                        // temperature later
+          startTemperatures[cellIndex]; // for correctness of returned border T
     }
   }
   if (col == WIDTH - 2) {
-    for (int cellIndex = stripStartIndex + 1; cellIndex <= stripEndIndex + 1;
-         cellIndex += WIDTH) {
+    // starting from row above and ending a row below, to cover corners
+    // (theoretically not necessary, but done for the sake of correctness of
+    // returned border minimal temperature)
+    for (int cellIndex = stripStartIndex - WIDTH + 1;
+         cellIndex <= stripEndIndex + WIDTH + 1; cellIndex += WIDTH) {
       foregoingTemperatures[cellIndex] = startTemperatures[cellIndex];
       newTemperatures[cellIndex] =
-          startTemperatures[cellIndex]; // to read a meaningful border minimal
-                                        // temperature later
+          startTemperatures[cellIndex]; // for correctness of returned border T
     }
   }
 
@@ -161,7 +161,6 @@ simulate_heat(__global const cell_type_t *bufInBoards,
   simulation_steps_index_t equilibriumMoment = 0;
 
   for (simulation_steps_index_t step = 0; step < STEPS_NUMBER; step++) {
-
     // perform a step of a simulation
 
     for (int cellIndex = stripStartIndex; cellIndex <= stripEndIndex;
@@ -226,31 +225,33 @@ simulate_heat(__global const cell_type_t *bufInBoards,
   } // end of simulation
 
   // write to outputs of a strip
+  // foregoingTemperatures are used on purpose for the edge-case of
+  // STEPS_NUMBER == 0
   for (int cellIndex = stripStartIndex; cellIndex <= stripEndIndex;
        cellIndex += WIDTH) {
-    finalTemperatures[cellIndex] = newTemperatures[cellIndex];
+    finalTemperatures[cellIndex] = foregoingTemperatures[cellIndex];
   }
 
   // write to outputs neigtbors if necessary
   if (stripIndex == 0) {
     finalTemperatures[stripStartIndex - WIDTH] =
-        newTemperatures[stripStartIndex - WIDTH];
+        foregoingTemperatures[stripStartIndex - WIDTH];
   }
   if (stripIndex == stripsPerColumn - 1) {
     finalTemperatures[stripEndIndex + WIDTH] =
-        newTemperatures[stripEndIndex + WIDTH];
+        foregoingTemperatures[stripEndIndex + WIDTH];
   }
 
   if (col == 1) {
-    for (int cellIndex = stripStartIndex - 1; cellIndex <= stripEndIndex - 1;
-         cellIndex += WIDTH) {
-      finalTemperatures[cellIndex] = newTemperatures[cellIndex];
+    for (int cellIndex = stripStartIndex - WIDTH - 1;
+         cellIndex <= stripEndIndex + WIDTH - 1; cellIndex += WIDTH) {
+      finalTemperatures[cellIndex] = foregoingTemperatures[cellIndex];
     }
   }
   if (col == WIDTH - 2) {
-    for (int cellIndex = stripStartIndex + 1; cellIndex <= stripEndIndex + 1;
-         cellIndex += WIDTH) {
-      finalTemperatures[cellIndex] = newTemperatures[cellIndex];
+    for (int cellIndex = stripStartIndex - WIDTH + 1;
+         cellIndex <= stripEndIndex + WIDTH + 1; cellIndex += WIDTH) {
+      finalTemperatures[cellIndex] = foregoingTemperatures[cellIndex];
     }
   }
 
