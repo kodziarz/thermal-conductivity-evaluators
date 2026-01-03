@@ -101,19 +101,21 @@ TEST(SequentialHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomD
     if (seqFile.is_open() && parFile.is_open())
     {
 
-        for (int i = 0; i < 10; i++)
+        SequentialHeatSimulation sequentialSimulator(boardHeight, boardWidth, testParams);
+        simulation_value_t *sequentialMinTemperatures = new simulation_value_t[boardHeight * boardWidth];
+        simulation_steps_index_t sequentialEquilibriumStep;
+
+        ParallelHeatSimulation parallelSimulator(boardHeight, boardWidth, testParams);
+        simulation_value_t *parallelMinTemperatures = new simulation_value_t[boardHeight * boardWidth];
+        simulation_steps_index_t parallelEquilibriumStep;
+
+        for (int i = 0; i < 500; i++)
         {
             testParams.simulationSteps = i;
-
-            SequentialHeatSimulation sequentialSimulator(boardHeight, boardWidth, testParams);
-            simulation_value_t *sequentialMinTemperatures = new simulation_value_t[boardHeight * boardWidth];
-            simulation_steps_index_t sequentialEquilibriumStep;
+            sequentialSimulator.setSimulationParams(testParams);
+            parallelSimulator.setSimulationParams(testParams);
 
             auto sequentialResult = sequentialSimulator.evaluateGeneration(fenotypes, sequentialMinTemperatures, &sequentialEquilibriumStep);
-
-            ParallelHeatSimulation parallelSimulator(boardHeight, boardWidth, testParams);
-            simulation_value_t *parallelMinTemperatures = new simulation_value_t[boardHeight * boardWidth];
-            simulation_steps_index_t parallelEquilibriumStep;
 
             auto parallelResult = parallelSimulator.evaluateGeneration(fenotypes, parallelMinTemperatures, &parallelEquilibriumStep);
 
@@ -122,22 +124,25 @@ TEST(SequentialHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomD
             ASSERT_EQ(sequentialResult.size(), 1u);
             ASSERT_EQ(parallelResult.size(), 1u);
 
+            seqFile << "Step: " << i << std::endl;
+            parFile << "Step: " << i << std::endl;
+
             for (int row = 0; row < boardHeight; row++)
             {
                 for (int column = 0; column < boardWidth; column++)
                 {
-                    seqFile << std::fixed << std::setprecision(6) << sequentialMinTemperatures[row * boardWidth + column] << " ";
-                    parFile << std::fixed << std::setprecision(6) << parallelMinTemperatures[row * boardWidth + column] << " ";
+                    seqFile << std::fixed << std::setprecision(8) << sequentialMinTemperatures[row * boardWidth + column] << " ";
+                    parFile << std::fixed << std::setprecision(8) << parallelMinTemperatures[row * boardWidth + column] << " ";
                 }
                 seqFile << std::endl;
                 parFile << std::endl;
             }
             seqFile << std::endl;
             parFile << std::endl;
-
-            delete[] sequentialMinTemperatures;
-            delete[] parallelMinTemperatures;
         }
+
+        delete[] sequentialMinTemperatures;
+        delete[] parallelMinTemperatures;
 
         // Close the file
         seqFile.close();
