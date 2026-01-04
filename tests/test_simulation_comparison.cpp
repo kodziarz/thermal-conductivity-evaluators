@@ -109,7 +109,7 @@ TEST(SequentialHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomD
         simulation_value_t *parallelMinTemperatures = new simulation_value_t[boardHeight * boardWidth];
         simulation_steps_index_t parallelEquilibriumStep;
 
-        for (int i = 0; i < 500; i++)
+        for (int i = 0; i < 1'333; i++)
         {
             testParams.simulationSteps = i;
             sequentialSimulator.setSimulationParams(testParams);
@@ -131,8 +131,8 @@ TEST(SequentialHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomD
             {
                 for (int column = 0; column < boardWidth; column++)
                 {
-                    seqFile << std::fixed << std::setprecision(8) << sequentialMinTemperatures[row * boardWidth + column] << " ";
-                    parFile << std::fixed << std::setprecision(8) << parallelMinTemperatures[row * boardWidth + column] << " ";
+                    seqFile << std::fixed << std::setprecision(13) << sequentialMinTemperatures[row * boardWidth + column] << " ";
+                    parFile << std::fixed << std::setprecision(13) << parallelMinTemperatures[row * boardWidth + column] << " ";
                 }
                 seqFile << std::endl;
                 parFile << std::endl;
