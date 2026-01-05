@@ -193,11 +193,19 @@ simulate_heat(__global const cell_type_t *bufInBoards,
       simulation_value_t newT = foregoingT + temperatureIncrease;
       newTemperatures[cellIndex] = foregoingT + temperatureIncrease;
 
+      simulation_value_t absForegoingT = fabs(foregoingT);
+      simulation_value_t absNewT = fabs(newT);
       simulation_value_t errorDenominator =
-          (foregoingT > newT) * foregoingT + (foregoingT <= newT) * newT;
+          (absForegoingT > absNewT) * absForegoingT +
+          (absForegoingT <= absNewT) * absNewT;
       bool didChange = errorDenominator != 0 &&
-                       (temperatureIncrease / errorDenominator) >= ETA;
+                       fabs(temperatureIncrease / errorDenominator) >= ETA;
       equilibriumMoment = didChange * step + (!didChange) * equilibriumMoment;
+#ifdef DEBUG
+      if (step == 49000) {
+        debug[global_id] = ETA; // board copied
+      }
+#endif
     }
 
     // to that moment foregoingTemperatures have had proper foregoing values
