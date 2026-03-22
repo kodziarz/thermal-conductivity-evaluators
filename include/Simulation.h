@@ -75,4 +75,7 @@ namespace conductivity_evaluators
 
 }
 
+using conductivity_evaluators::Simulation;
+using conductivity_evaluators::SimulationParams;
+
 #endif // SIMULATION_H

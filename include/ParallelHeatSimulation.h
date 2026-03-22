@@ -37,3 +37,5 @@ namespace conductivity_evaluators
     };
 
 }
+
+using conductivity_evaluators::ParallelHeatSimulation;

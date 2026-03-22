@@ -38,4 +38,6 @@ namespace conductivity_evaluators
 
 }
 
+using conductivity_evaluators::SequentialHeatSimulation;
+
 #endif // SEQUNTIALHEATSIMULATION_H
