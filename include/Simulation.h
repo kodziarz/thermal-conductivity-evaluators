@@ -19,7 +19,7 @@ namespace conductivity_evaluators
         const simulation_value_t startTemperature = 300.0;
         const simulation_value_t drainTemperature = 280.0;
 
-        const simulation_value_t GENERATOR_ALPHA = 1;
+        const simulation_value_t GENERATOR_ALPHA = 0.1;
         const simulation_value_t GENERATOR_BETA = 10;
 
         const simulation_value_t CONDUCTOR_ALPHA = 10;
