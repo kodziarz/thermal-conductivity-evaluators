@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 #include "Simulation.h"
-#include "Fenotype.h"
 
 namespace conductivity_evaluators
 {

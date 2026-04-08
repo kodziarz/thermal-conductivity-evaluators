@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <cmath>
 #include <chrono>
-#include "Solution.h"
 #include "SequentialHeatSimulation.h"
 #include "env.h"
 

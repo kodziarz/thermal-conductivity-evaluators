@@ -4,8 +4,9 @@
 #include <algorithm>
 #include <cstring>
 #include "GraphicsUtils.h"
-#include "evolution_params.h"
 #include <vector>
+
+#define SIMULATION_STEPS 150'000
 
 namespace conductivity_evaluators
 {
