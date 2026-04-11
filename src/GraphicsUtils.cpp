@@ -39,7 +39,7 @@ namespace conductivity_evaluators
 
     std::string loadKernel(std::string_view path,
                            int stepsNumber,
-                           simulation_value_t ETA,
+                           simulation_value_t RESULTANT_POWER_TOL,
                            simulation_value_t generatorAlpha,
                            simulation_value_t generatorBeta,
                            simulation_value_t conductorAlpha,
@@ -48,14 +48,15 @@ namespace conductivity_evaluators
                            simulation_value_t deltaTime,
                            int height,
                            int width,
+                           int thickness,
                            int stripLength)
     {
         std::string kernel_code = read_file(path);
 
         setKernelParam(kernel_code, "#define STEPS_NUMBER 0", "#define STEPS_NUMBER " + std::to_string(stepsNumber));
         std::ostringstream sstream;
-        sstream << ETA;
-        setKernelParam(kernel_code, "#define ETA 0", "#define ETA " + sstream.str());
+        sstream << RESULTANT_POWER_TOL;
+        setKernelParam(kernel_code, "#define RESULTANT_POWER_TOL 0", "#define RESULTANT_POWER_TOL " + sstream.str());
         setKernelParam(kernel_code, "#define GENERATOR_ALPHA 0", "#define GENERATOR_ALPHA " + std::to_string(generatorAlpha));
         setKernelParam(kernel_code, "#define GENERATOR_BETA 0", "#define GENERATOR_BETA " + std::to_string(generatorBeta));
         setKernelParam(kernel_code, "#define CONDUCTOR_ALPHA 0", "#define CONDUCTOR_ALPHA " + std::to_string(conductorAlpha));
@@ -64,6 +65,7 @@ namespace conductivity_evaluators
         setKernelParam(kernel_code, "#define DELTA_TIME 0", "#define DELTA_TIME " + std::to_string(deltaTime));
         setKernelParam(kernel_code, "#define WIDTH 0", "#define WIDTH " + std::to_string(width));
         setKernelParam(kernel_code, "#define HEIGHT 0", "#define HEIGHT " + std::to_string(height));
+        setKernelParam(kernel_code, "#define THICKNESS 0", "#define THICKNESS " + std::to_string(thickness));
         setKernelParam(kernel_code, "#define STRIP_LENGTH 1", "#define STRIP_LENGTH " + std::to_string(stripLength));
 
         return kernel_code;

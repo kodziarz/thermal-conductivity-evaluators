@@ -16,7 +16,7 @@ namespace conductivity_evaluators
     std::string read_file(std::string_view path);
     std::string loadKernel(std::string_view path,
                            int stepsNumber,
-                           simulation_value_t ETA,
+                           simulation_value_t RESULTANT_POWER_TOL,
                            simulation_value_t generatorAlpha,
                            simulation_value_t generatorBeta,
                            simulation_value_t conductorAlpha,
@@ -25,6 +25,7 @@ namespace conductivity_evaluators
                            simulation_value_t deltaTime,
                            int height,
                            int width,
+                           int thickness,
                            int stripLength);
 
     cl_device_id getDevice(cl_platform_id platform,

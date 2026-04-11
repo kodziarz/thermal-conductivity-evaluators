@@ -13,13 +13,12 @@ namespace conductivity_evaluators
         GENERATOR_ALPHA = params.GENERATOR_ALPHA;
         CONDUCTOR_BETA = params.CONDUCTOR_BETA;
         GENERATOR_BETA = params.GENERATOR_BETA;
+        ETA = params.ETA;
+        RESULTANT_POWER_TOL = params.RESULTANT_POWER_TOL;
 
         if (params.startTemperatures != NULL)
         {
-            for (int i = 0; i < boardHeight * boardWidth; i++)
-            {
-                startTemperatures[i] = params.startTemperatures[i];
-            }
+            std::memcpy((void *)startTemperatures, params.startTemperatures, boardHeight * boardWidth * boardThickness * sizeof(simulation_value_t));
         }
     }
 
