@@ -6,7 +6,7 @@
 #include "GraphicsUtils.h"
 #include <vector>
 
-#define SIMULATION_STEPS 150'000
+#define SIMULATION_STEPS 100'000
 
 namespace conductivity_evaluators
 {
@@ -54,11 +54,12 @@ namespace conductivity_evaluators
         Simulation(int boardHeight, int boardWidth, int thickness,
                    const SimulationParams &params = SimulationParams{}) : boardHeight(boardHeight), boardWidth(boardWidth), boardThickness(thickness), individualHeight(boardHeight - 2), individualWidth(boardWidth - 2), individualThickness(thickness - 2), simulationSteps(params.simulationSteps), drainTemperature(params.drainTemperature), delta_time(params.delta_time), DRAIN_ALPHA(params.DRAIN_ALPHA), CONDUCTOR_ALPHA(params.CONDUCTOR_ALPHA), GENERATOR_ALPHA(params.GENERATOR_ALPHA), CONDUCTOR_BETA(params.CONDUCTOR_BETA), GENERATOR_BETA(params.GENERATOR_BETA), ETA(params.ETA), RESULTANT_POWER_TOL(params.RESULTANT_POWER_TOL)
         {
-            startTemperatures = new simulation_value_t[boardWidth * boardHeight * boardThickness]{0};
+            int boardSize = boardWidth * boardHeight * boardThickness;
+            startTemperatures = new simulation_value_t[boardSize]{0};
             if (params.startTemperatures == nullptr)
-                std::fill_n(startTemperatures, boardHeight * boardWidth, params.drainTemperature);
+                std::fill_n(startTemperatures, boardSize, params.drainTemperature);
             else
-                std::memcpy(startTemperatures, params.startTemperatures, boardHeight * boardWidth * sizeof(simulation_value_t));
+                std::memcpy(startTemperatures, params.startTemperatures, boardSize * sizeof(simulation_value_t));
         };
 
         ~Simulation()

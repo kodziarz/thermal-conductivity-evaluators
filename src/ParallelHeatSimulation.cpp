@@ -114,13 +114,7 @@ namespace conductivity_evaluators
 
     ParallelHeatSimulation::~ParallelHeatSimulation()
     {
-        // clReleaseMemObject(bufInBoards);
-        // clReleaseMemObject(bufOutStripMaxTs);
-        // clReleaseMemObject(bufInnerForegoingTemperatures);
-        // clReleaseMemObject(bufInnerNewTemperatures);
-        // clReleaseKernel(kernel);
         clReleaseProgram(program);
-        // clReleaseCommandQueue(queue);
         clReleaseContext(context);
     }
 
@@ -133,6 +127,8 @@ namespace conductivity_evaluators
         int depthStratumSize = boardHeight * boardWidth;
         int board_size = depthStratumSize * boardThickness;
         int solutionsNumber = fenotypes.size() / board_size;
+
+        std::vector<simulation_value_t> debug_startTemperatures = std::vector<simulation_value_t>(startTemperatures, startTemperatures + board_size);
 
         if (solutionsNumber <= 0)
         {
@@ -294,16 +290,25 @@ namespace conductivity_evaluators
         // ----------------------------------------------------
         int arg_index = 0;
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInBoards);
+        checkClSetKernelArgStatus(status, "boards");
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInStartTemperatures);
+        checkClSetKernelArgStatus(status, "start temperatures");
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutStripMaxTs);
+        checkClSetKernelArgStatus(status, "strip max temperatures");
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutFinalTs);
+        checkClSetKernelArgStatus(status, "final temperatures");
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutResultantPowers);
+        checkClSetKernelArgStatus(status, "resultant powers");
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutStripEquilibriumMoments);
+        checkClSetKernelArgStatus(status, "strip equilibrium moments");
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInnerForegoingTemperatures);
+        checkClSetKernelArgStatus(status, "foregoing temperatures");
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInnerNewTemperatures);
+        checkClSetKernelArgStatus(status, "new temperatures");
 
 #ifdef KERNEL_DEBUG
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutDebug);
+        checkClSetKernelArgStatus(status, "debug output");
         std::cout << "Debug kernel arg set" << std::endl;
 #endif
 
@@ -326,7 +331,8 @@ namespace conductivity_evaluators
             std::cout << "EnqueueNDRange failed with status: " << status << std::endl;
         }
 
-        clFinish(queue); // sychronizes
+        status = clFinish(queue); // sychronizes
+        checkClFinishStatus(status);
 
 #ifdef PARALLEL_SIMULATION_BENCHMARK
         stop = std::chrono::high_resolution_clock::now();
@@ -491,6 +497,12 @@ namespace conductivity_evaluators
 
     inline void ParallelHeatSimulation::buildProgram()
     {
+        if (program)
+        {
+            clReleaseProgram(program);
+            program = nullptr;
+        }
+
         // std::string source = read_file("kernels/simulation_kernel_global_column_wise.cl");
         std::string source = loadKernel(
             "kernels/simulation_kernel_global_stripped_column_wise.cl",

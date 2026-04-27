@@ -65,6 +65,7 @@ namespace conductivity_evaluators
         setKernelParam(kernel_code, "#define DELTA_TIME 0", "#define DELTA_TIME " + std::to_string(deltaTime));
         setKernelParam(kernel_code, "#define WIDTH 0", "#define WIDTH " + std::to_string(width));
         setKernelParam(kernel_code, "#define HEIGHT 0", "#define HEIGHT " + std::to_string(height));
+        std::string xd = "#define THICKNESS " + std::to_string(thickness);
         setKernelParam(kernel_code, "#define THICKNESS 0", "#define THICKNESS " + std::to_string(thickness));
         setKernelParam(kernel_code, "#define STRIP_LENGTH 1", "#define STRIP_LENGTH " + std::to_string(stripLength));
 
@@ -249,7 +250,7 @@ namespace conductivity_evaluators
             return;
         }
 
-        std::cout << "clEnqueueReadBuffer failed. Buffer: " << bufferName << "Error: " << status << std::endl;
+        std::cout << "clEnqueueReadBuffer failed.\nBuffer: " << bufferName << "\nError: " << status << std::endl;
 
         switch (status)
         {
@@ -303,6 +304,99 @@ namespace conductivity_evaluators
         }
 
         throw std::runtime_error("Buffer read error occurred.");
+    }
+
+    void checkClFinishStatus(cl_int status)
+    {
+        if (status == CL_SUCCESS)
+        {
+            return;
+        }
+
+        std::cout << "clFinish failed.\nError code: " << status << std::endl;
+
+        switch (status)
+        {
+        case CL_INVALID_COMMAND_QUEUE:
+            std::cout << "Error: CL_INVALID_COMMAND_QUEUE - Command queue is not valid." << std::endl;
+            break;
+
+        case CL_OUT_OF_RESOURCES:
+            std::cout << "Error: CL_OUT_OF_RESOURCES - Not enough resources on the device." << std::endl;
+            break;
+
+        case CL_OUT_OF_HOST_MEMORY:
+            std::cout << "Error: CL_OUT_OF_HOST_MEMORY - Not enough memory on the host." << std::endl;
+            break;
+
+        default:
+            std::cout << "Error: Unknown status code " << status << std::endl;
+            break;
+        }
+
+        throw std::runtime_error("OpenCL error occurred in clFinish");
+    }
+
+    void checkClSetKernelArgStatus(cl_int status, const std::string &bufferName)
+    {
+        if (status == CL_SUCCESS)
+        {
+            return;
+        }
+
+        std::cout << "clSetKernelArg failed for argument: " << bufferName
+                  << "\nError code: " << status << std::endl;
+
+        switch (status)
+        {
+        case CL_INVALID_KERNEL:
+            std::cout << "Error: CL_INVALID_KERNEL - Kernel is not a valid kernel object." << std::endl;
+            break;
+
+        case CL_INVALID_ARG_INDEX:
+            std::cout << "Error: CL_INVALID_ARG_INDEX - Argument index is not valid." << std::endl;
+            break;
+
+        case CL_INVALID_ARG_VALUE:
+            std::cout << "Error: CL_INVALID_ARG_VALUE - Argument value is not valid." << std::endl;
+            break;
+
+        case CL_INVALID_MEM_OBJECT:
+            std::cout << "Error: CL_INVALID_MEM_OBJECT - Invalid memory object provided." << std::endl;
+            break;
+
+        case CL_INVALID_SAMPLER:
+            std::cout << "Error: CL_INVALID_SAMPLER - Invalid sampler object." << std::endl;
+            break;
+
+        case CL_INVALID_DEVICE_QUEUE:
+            std::cout << "Error: CL_INVALID_DEVICE_QUEUE - Invalid device queue object (OpenCL 2.0+)." << std::endl;
+            break;
+
+        case CL_INVALID_ARG_SIZE:
+            std::cout << "Error: CL_INVALID_ARG_SIZE - Argument size does not match expected size." << std::endl;
+            break;
+
+#ifdef CL_MAX_SIZE_RESTRICTION_EXCEEDED
+        case CL_MAX_SIZE_RESTRICTION_EXCEEDED:
+            std::cout << "Error: CL_MAX_SIZE_RESTRICTION_EXCEEDED - Argument exceeds maximum allowed size." << std::endl;
+            break;
+#endif
+
+        case CL_OUT_OF_RESOURCES:
+            std::cout << "Error: CL_OUT_OF_RESOURCES - Not enough device resources." << std::endl;
+            break;
+
+        case CL_OUT_OF_HOST_MEMORY:
+            std::cout << "Error: CL_OUT_OF_HOST_MEMORY - Not enough host memory." << std::endl;
+            break;
+
+        default:
+            std::cout << "Error: Unknown status code " << status << std::endl;
+            break;
+        }
+
+        throw std::runtime_error("OpenCL error occurred in clSetKernelArg for argument: " + bufferName);
     }
 
 }

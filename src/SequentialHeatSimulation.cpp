@@ -63,7 +63,7 @@ namespace conductivity_evaluators
 
             if (finalTemperatures != NULL)
             {
-                std::memcpy(finalTemperatureDistributions + fenotype_i + boardSize, finalTemperatures, boardSize * sizeof(simulation_value_t));
+                std::memcpy(finalTemperatureDistributions + fenotype_i * boardSize, finalTemperatures, boardSize * sizeof(simulation_value_t));
             }
             delete[] finalTemperatures;
 
@@ -141,7 +141,7 @@ namespace conductivity_evaluators
                         simulation_value_t temperatureIncrease = delta_time * resultantPower;
                         outputTs[cellIndex] += temperatureIncrease;
 
-                        if (returnedEquilibriumMoment != NULL && resultantPower < RESULTANT_POWER_TOL)
+                        if (returnedEquilibriumMoment != NULL && resultantPower > RESULTANT_POWER_TOL)
                         {
                             *returnedEquilibriumMoment = i;
                         }

@@ -27,7 +27,7 @@ namespace conductivity_evaluators
         cl_context context;
         int stripLength, stripsPerColumn;
         size_t kernelMaxWorkGroupSize;
-        cl_program program;
+        cl_program program = nullptr;
 
         inline void buildProgram();
         inline int calculateStripLength(int maxWorkGroupSize);

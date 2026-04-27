@@ -38,6 +38,8 @@ namespace conductivity_evaluators
     void checkKernelCreationErrors(cl_int status);
     void checkEnqueueNDRangeErrors(cl_int status);
     void checkBufferReadErrors(cl_int status, std::string bufferName);
+    void checkClFinishStatus(cl_int status);
+    void checkClSetKernelArgStatus(cl_int status, const std::string &bufferName);
 
 }
 
