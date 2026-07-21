@@ -4,6 +4,7 @@
 #include "ParallelHeatSimulation.h"
 #include "Fenotype.h"
 #include <algorithm>
+#include <fstream>
 
 #define TEST_REL_ERROR 0.00001
 
@@ -24,7 +25,7 @@ constexpr simulation_value_t upperToleranceBound(simulation_value_t expectedValu
 }
 
 #pragma region 6x6BottomDrain
-TEST(SequentialHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomDrainFenotype)
+TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomDrainFenotype)
 {
 
     // prepare
@@ -157,9 +158,3 @@ TEST(SequentialHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomD
     }
 }
 #pragma endregion 6x6BottomDrain
-
-int main(int argc, char **argv)
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

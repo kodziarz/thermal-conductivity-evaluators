@@ -1845,9 +1845,3 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithBigLeftConductorStripFeno
     delete[] minTemperatures;
 }
 #pragma endregion 32x32LeftStrip
-
-int main(int argc, char **argv)
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
