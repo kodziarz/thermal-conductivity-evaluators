@@ -8,7 +8,6 @@ add_library(thermal_conductivity_evaluators STATIC
 target_include_directories(conductivity_evaluators
 	PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/include
-		${CMAKE_SOURCE_DIR}/src
 )
 
 target_link_libraries(conductivity_evaluators
