@@ -1,4 +1,4 @@
-add_library(conductivity_evaluators STATIC
+add_library(thermal_conductivity_evaluators STATIC
 	src/GraphicsUtils.cpp
 	src/ParallelHeatSimulation.cpp
 	src/SequentialHeatSimulation.cpp
