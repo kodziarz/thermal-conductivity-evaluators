@@ -37,7 +37,7 @@ namespace conductivity_evaluators
         return out;
     }
 
-    std::string loadKernel(std::string_view path,
+    std::string loadKernel(const std::string_view kernel_code,
                            int stepsNumber,
                            simulation_value_t ETA,
                            simulation_value_t generatorAlpha,
@@ -50,23 +50,23 @@ namespace conductivity_evaluators
                            int width,
                            int stripLength)
     {
-        std::string kernel_code = read_file(path);
+        std::string parametrized_kernel_code(kernel_code);
 
-        setKernelParam(kernel_code, "#define STEPS_NUMBER 0", "#define STEPS_NUMBER " + std::to_string(stepsNumber));
+        setKernelParam(parametrized_kernel_code, "#define STEPS_NUMBER 0", "#define STEPS_NUMBER " + std::to_string(stepsNumber));
         std::ostringstream sstream;
         sstream << ETA;
-        setKernelParam(kernel_code, "#define ETA 0", "#define ETA " + sstream.str());
-        setKernelParam(kernel_code, "#define GENERATOR_ALPHA 0", "#define GENERATOR_ALPHA " + std::to_string(generatorAlpha));
-        setKernelParam(kernel_code, "#define GENERATOR_BETA 0", "#define GENERATOR_BETA " + std::to_string(generatorBeta));
-        setKernelParam(kernel_code, "#define CONDUCTOR_ALPHA 0", "#define CONDUCTOR_ALPHA " + std::to_string(conductorAlpha));
-        setKernelParam(kernel_code, "#define CONDUCTOR_BETA 0", "#define CONDUCTOR_BETA " + std::to_string(conductorBeta));
-        setKernelParam(kernel_code, "#define DRAIN_ALPHA 0", "#define DRAIN_ALPHA " + std::to_string(drainAlpha));
-        setKernelParam(kernel_code, "#define DELTA_TIME 0", "#define DELTA_TIME " + std::to_string(deltaTime));
-        setKernelParam(kernel_code, "#define WIDTH 0", "#define WIDTH " + std::to_string(width));
-        setKernelParam(kernel_code, "#define HEIGHT 0", "#define HEIGHT " + std::to_string(height));
-        setKernelParam(kernel_code, "#define STRIP_LENGTH 1", "#define STRIP_LENGTH " + std::to_string(stripLength));
+        setKernelParam(parametrized_kernel_code, "#define ETA 0", "#define ETA " + sstream.str());
+        setKernelParam(parametrized_kernel_code, "#define GENERATOR_ALPHA 0", "#define GENERATOR_ALPHA " + std::to_string(generatorAlpha));
+        setKernelParam(parametrized_kernel_code, "#define GENERATOR_BETA 0", "#define GENERATOR_BETA " + std::to_string(generatorBeta));
+        setKernelParam(parametrized_kernel_code, "#define CONDUCTOR_ALPHA 0", "#define CONDUCTOR_ALPHA " + std::to_string(conductorAlpha));
+        setKernelParam(parametrized_kernel_code, "#define CONDUCTOR_BETA 0", "#define CONDUCTOR_BETA " + std::to_string(conductorBeta));
+        setKernelParam(parametrized_kernel_code, "#define DRAIN_ALPHA 0", "#define DRAIN_ALPHA " + std::to_string(drainAlpha));
+        setKernelParam(parametrized_kernel_code, "#define DELTA_TIME 0", "#define DELTA_TIME " + std::to_string(deltaTime));
+        setKernelParam(parametrized_kernel_code, "#define WIDTH 0", "#define WIDTH " + std::to_string(width));
+        setKernelParam(parametrized_kernel_code, "#define HEIGHT 0", "#define HEIGHT " + std::to_string(height));
+        setKernelParam(parametrized_kernel_code, "#define STRIP_LENGTH 1", "#define STRIP_LENGTH " + std::to_string(stripLength));
 
-        return kernel_code;
+        return parametrized_kernel_code;
     }
 
     cl_device_id getDevice(cl_platform_id platform, cl_device_type preferredDevice, cl_device_type fallbackDeviceType)

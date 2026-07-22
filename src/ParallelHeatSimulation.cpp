@@ -10,6 +10,7 @@
 #include "ParallelHeatSimulation.h"
 #include <ctime>
 #include "env.h"
+#include "simulation_kernel_global_stripped_column_wise.hpp" // makes the std::string_view simulation_kernel_global_stripped_column_wise available
 
 // #define KERNEL_DEBUG
 
@@ -482,7 +483,7 @@ namespace conductivity_evaluators
     {
         // std::string source = read_file("kernels/simulation_kernel_global_column_wise.cl");
         std::string source = loadKernel(
-            "kernels/simulation_kernel_global_stripped_column_wise.cl",
+            kernels::simulation_kernel_global_stripped_column_wise,
             simulationSteps,
             ETA,
             GENERATOR_ALPHA,
@@ -526,8 +527,8 @@ namespace conductivity_evaluators
     inline int ParallelHeatSimulation::calculateStripLength(int maxWorkGroupSize)
     {
         std::cout << "DEBUG ParallelSim: H=" << individualHeight
-          << ", W=" << individualWidth
-          << ", MaxWG=" << maxWorkGroupSize << std::endl;
+                  << ", W=" << individualWidth
+                  << ", MaxWG=" << maxWorkGroupSize << std::endl;
 
         for (int i = 1; i <= individualHeight; i++)
         {

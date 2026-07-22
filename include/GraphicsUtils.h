@@ -14,7 +14,7 @@ namespace conductivity_evaluators
     // Function declarations
     void setKernelParam(std::string &kernel_code, std::string_view param_string, std::string_view replace_string);
     std::string read_file(std::string_view path);
-    std::string loadKernel(std::string_view path,
+    std::string loadKernel(const std::string_view kernel_code,
                            int stepsNumber,
                            simulation_value_t ETA,
                            simulation_value_t generatorAlpha,
