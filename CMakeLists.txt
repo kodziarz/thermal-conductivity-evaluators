@@ -6,24 +6,24 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(OpenCL REQUIRED)
 
-add_library(thermal_conductivity_evaluators STATIC
+add_library(${PROJECT_NAME} STATIC
 	src/GraphicsUtils.cpp
 	src/ParallelHeatSimulation.cpp
 	src/SequentialHeatSimulation.cpp
 	src/Simulation.cpp
 )
 
-target_include_directories(thermal_conductivity_evaluators
+target_include_directories(${PROJECT_NAME}
 	PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(thermal_conductivity_evaluators
+target_link_libraries(${PROJECT_NAME}
 	PUBLIC
 		OpenCL::OpenCL
 )
 
-target_compile_features(thermal_conductivity_evaluators PUBLIC cxx_std_20)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 target_compile_definitions(${PROJECT_NAME}
  	PUBLIC
