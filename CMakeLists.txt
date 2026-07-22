@@ -25,7 +25,9 @@ target_link_libraries(thermal_conductivity_evaluators
 
 target_compile_features(thermal_conductivity_evaluators PUBLIC cxx_std_20)
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE CL_TARGET_OPENCL_VERSION=300)
+target_compile_definitions(${PROJECT_NAME}
+ 	PUBLIC
+		CL_TARGET_OPENCL_VERSION=300)
 
 
 # Tests
