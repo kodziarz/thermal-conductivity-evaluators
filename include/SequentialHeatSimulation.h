@@ -25,8 +25,8 @@ namespace conductivity_evaluators
     public:
         SequentialHeatSimulation(int boardHeight, int boardWidth, const SimulationParams &params = SimulationParams{}) : Simulation(boardHeight, boardWidth, params) {};
 
-        simulation_value_t evaluateFenotype(const cell_type_t *fenotype, simulation_value_t **returnedFinalTemperatures = NULL, simulation_steps_index_t *returnedEquilibriumMoment = NULL);
-        std::vector<simulation_value_t> evaluateGeneration(const std::vector<cell_type_t> &fenotypes, simulation_value_t *minFinalTemperatures = NULL, simulation_steps_index_t *lastEquilibriumMoment = NULL) override;
+        simulation_value_t evaluateSystemLayout(const cell_type_t *systemLayout, simulation_value_t **returnedFinalTemperatures = NULL, simulation_steps_index_t *returnedEquilibriumMoment = NULL);
+        std::vector<simulation_value_t> evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures = NULL, simulation_steps_index_t *lastEquilibriumMoment = NULL) override;
 
     protected:
         simulation_value_t calculateMutualAlpha(cell_type_t neighbor_type, cell_type_t considered_cell_type);

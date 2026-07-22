@@ -2,7 +2,7 @@
 #include <cmath>
 #include "SequentialHeatSimulation.h"
 #include "ParallelHeatSimulation.h"
-#include "Fenotype.h"
+#include "SystemLayout.h"
 #include <algorithm>
 #include <fstream>
 
@@ -25,7 +25,7 @@ constexpr simulation_value_t upperToleranceBound(simulation_value_t expectedValu
 }
 
 #pragma region 6x6BottomDrain
-TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomDrainFenotype)
+TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomDrainSystemLayout)
 {
 
     // prepare
@@ -76,8 +76,8 @@ TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomD
 
     // test
 
-    Fenotype_t fen = Fenotype::createGeneratorFenotype(boardHeight, boardWidth);
-    std::vector<cell_type_t> fenotypes(fen, fen + boardHeight * boardWidth);
+    SystemLayout_t fen = SystemLayout::createGeneratorSystemLayout(boardHeight, boardWidth);
+    std::vector<cell_type_t> systemLayouts(fen, fen + boardHeight * boardWidth);
     delete[] fen;
 
     simulation_value_t *startTemperatures = new simulation_value_t[boardHeight * boardWidth];
@@ -116,9 +116,9 @@ TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomD
             sequentialSimulator.setSimulationParams(testParams);
             parallelSimulator.setSimulationParams(testParams);
 
-            auto sequentialResult = sequentialSimulator.evaluateGeneration(fenotypes, sequentialMinTemperatures, &sequentialEquilibriumStep);
+            auto sequentialResult = sequentialSimulator.evaluateGeneration(systemLayouts, sequentialMinTemperatures, &sequentialEquilibriumStep);
 
-            auto parallelResult = parallelSimulator.evaluateGeneration(fenotypes, parallelMinTemperatures, &parallelEquilibriumStep);
+            auto parallelResult = parallelSimulator.evaluateGeneration(systemLayouts, parallelMinTemperatures, &parallelEquilibriumStep);
 
             // assert
 

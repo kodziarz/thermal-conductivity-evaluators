@@ -47,7 +47,7 @@ namespace conductivity_evaluators
         }
     }
 
-    std::vector<simulation_value_t> SequentialHeatSimulation::evaluateGeneration(const std::vector<cell_type_t> &fenotypes, simulation_value_t *minFinalTemperatures, simulation_steps_index_t *lastEquilibriumMoment)
+    std::vector<simulation_value_t> SequentialHeatSimulation::evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures, simulation_steps_index_t *lastEquilibriumMoment)
     {
 #ifdef BENCHMARK
         std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
@@ -67,11 +67,11 @@ namespace conductivity_evaluators
             *lastEquilibriumMoment = 0;
         }
 
-        for (const cell_type_t *fenotype = fenotypes.data(); fenotype < fenotypes.data() + fenotypes.size(); fenotype += boardHeight * boardWidth)
+        for (const cell_type_t *systemLayout = systemLayouts.data(); systemLayout < systemLayouts.data() + systemLayouts.size(); systemLayout += boardHeight * boardWidth)
         {
             simulation_value_t *finalTemperatures;
             simulation_steps_index_t equilibriumMoment = 0;
-            results.push_back(evaluateFenotype(fenotype, &finalTemperatures, &equilibriumMoment));
+            results.push_back(evaluateSystemLayout(systemLayout, &finalTemperatures, &equilibriumMoment));
 
             if (minFinalTemperatures != NULL)
             {
@@ -96,7 +96,7 @@ namespace conductivity_evaluators
         return results;
     }
 
-    simulation_value_t SequentialHeatSimulation::evaluateFenotype(const cell_type_t *fenotype, simulation_value_t **returnedFinalTemperatures, simulation_steps_index_t *returnedEquilibriumMoment)
+    simulation_value_t SequentialHeatSimulation::evaluateSystemLayout(const cell_type_t *systemLayout, simulation_value_t **returnedFinalTemperatures, simulation_steps_index_t *returnedEquilibriumMoment)
     {
         // simulation_value_t *inputTs = new simulation_value_t[boardHeight * boardWidth];
         std::vector<simulation_value_t> inputTs = std::vector<simulation_value_t>(boardHeight * boardWidth);
@@ -122,22 +122,22 @@ namespace conductivity_evaluators
                     simulation_value_t flow = 0;
 
                     simulation_value_t beta = GENERATOR_BETA;
-                    if (fenotype[cellIndex] != Cell::GENERATOR)
+                    if (systemLayout[cellIndex] != Cell::GENERATOR)
                     {
                         beta = CONDUCTOR_BETA;
                     }
                     // order of neighbors: bottom, up, right, left
                     flow += (inputTs[cellIndex + boardWidth] - currentT) *
-                            calculateMutualAlpha(fenotype[cellIndex], fenotype[cellIndex + boardWidth]);
+                            calculateMutualAlpha(systemLayout[cellIndex], systemLayout[cellIndex + boardWidth]);
 
                     flow += (inputTs[cellIndex - boardWidth] - currentT) *
-                            calculateMutualAlpha(fenotype[cellIndex], fenotype[cellIndex - boardWidth]);
+                            calculateMutualAlpha(systemLayout[cellIndex], systemLayout[cellIndex - boardWidth]);
 
                     flow += (inputTs[cellIndex + 1] - currentT) *
-                            calculateMutualAlpha(fenotype[cellIndex], fenotype[cellIndex + 1]);
+                            calculateMutualAlpha(systemLayout[cellIndex], systemLayout[cellIndex + 1]);
 
                     flow += (inputTs[cellIndex - 1] - currentT) *
-                            calculateMutualAlpha(fenotype[cellIndex], fenotype[cellIndex - 1]);
+                            calculateMutualAlpha(systemLayout[cellIndex], systemLayout[cellIndex - 1]);
 
                     simulation_value_t temperatureIncrease = delta_time * (flow + beta);
                     outputTs[cellIndex] += temperatureIncrease;

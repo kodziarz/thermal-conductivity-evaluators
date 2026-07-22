@@ -17,7 +17,7 @@ namespace conductivity_evaluators
         ParallelHeatSimulation(int boardHeight, int boardWidth, const SimulationParams &params = SimulationParams{});
         ~ParallelHeatSimulation();
 
-        std::vector<simulation_value_t> evaluateGeneration(const std::vector<cell_type_t> &fenotypes, simulation_value_t *minFinalTemperatures = NULL, simulation_steps_index_t *lastEquilibriumMoment = NULL) override;
+        std::vector<simulation_value_t> evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures = NULL, simulation_steps_index_t *lastEquilibriumMoment = NULL) override;
 
         void setSimulationParams(const SimulationParams &params) override;
 

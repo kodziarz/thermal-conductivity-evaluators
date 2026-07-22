@@ -1,5 +1,4 @@
-#ifndef FENOTYPE_H
-#define FENOTYPE_H
+#pragma once
 
 #include <vector>
 
@@ -14,13 +13,13 @@
 
 // using cell_type_t = int;
 
-using Fenotype_t = cell_type_t *;
+using SystemLayout_t = cell_type_t *;
 
-namespace Fenotype
+namespace SystemLayout
 {
     using namespace conductivity_evaluators;
 
-    inline Fenotype_t createGeneratorFenotype(int boardHeight, int boardWidth)
+    inline SystemLayout_t createGeneratorSystemLayout(int boardHeight, int boardWidth)
     {
         cell_type_t *result = new cell_type_t[boardHeight * boardWidth];
 
@@ -56,7 +55,7 @@ namespace Fenotype
         return result;
     }
 
-    inline Fenotype_t createLeftConductorStripFenotype(int boardHeight, int boardWidth, int stripBredth = 1)
+    inline SystemLayout_t createLeftConductorStripSystemLayout(int boardHeight, int boardWidth, int stripBredth = 1)
     {
         cell_type_t *result = new cell_type_t[boardHeight * boardWidth];
 
@@ -98,7 +97,7 @@ namespace Fenotype
     }
 
     template <typename Value_t>
-    inline Value_t *rotateLeftSquareFenotypeBy90Deg(int boardLength, const Value_t *beingRotated)
+    inline Value_t *rotateLeftSquareSystemLayoutBy90Deg(int boardLength, const Value_t *beingRotated)
     {
         Value_t *result = new Value_t[boardLength * boardLength];
 
@@ -124,5 +123,3 @@ namespace Fenotype
         return result;
     }
 }
-
-#endif // FENOTYPE_H

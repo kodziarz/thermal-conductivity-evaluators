@@ -136,14 +136,14 @@ namespace conductivity_evaluators
         clReleaseContext(context);
     }
 
-    std::vector<simulation_value_t> ParallelHeatSimulation::evaluateGeneration(const std::vector<cell_type_t> &fenotypes, simulation_value_t *minFinalTemperatures, simulation_steps_index_t *lastEquilibriumMoment)
+    std::vector<simulation_value_t> ParallelHeatSimulation::evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures, simulation_steps_index_t *lastEquilibriumMoment)
     {
 #ifdef BENCHMARK
         std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
 #endif
 
         int board_size = boardHeight * boardWidth;
-        int solutionsNumber = fenotypes.size() / board_size;
+        int solutionsNumber = systemLayouts.size() / board_size;
 
         if (solutionsNumber <= 0)
         {
@@ -153,7 +153,7 @@ namespace conductivity_evaluators
 
         simulation_value_t *minTs;
         simulation_steps_index_t eqMoment;
-        std::vector<simulation_value_t> maxTs = runSimulationKernel(fenotypes, solutionsNumber, &minTs, &eqMoment);
+        std::vector<simulation_value_t> maxTs = runSimulationKernel(systemLayouts, solutionsNumber, &minTs, &eqMoment);
 
         if (minFinalTemperatures != NULL)
         {

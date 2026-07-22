@@ -64,7 +64,7 @@ namespace conductivity_evaluators
             delete[] startTemperatures;
         }
 
-        virtual std::vector<simulation_value_t> evaluateGeneration(const std::vector<cell_type_t> &fenotypes, simulation_value_t *minFinalTemperatures = NULL, simulation_steps_index_t *lastEquilibriumMoment = NULL) = 0;
+        virtual std::vector<simulation_value_t> evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures = NULL, simulation_steps_index_t *lastEquilibriumMoment = NULL) = 0;
 
         virtual void setSimulationParams(const SimulationParams &params);
 

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <cmath>
 #include "ParallelHeatSimulation.h"
-#include "Fenotype.h"
+#include "SystemLayout.h"
 #include <algorithm>
 
 #define TEST_REL_ERROR 0.00001
@@ -24,7 +24,7 @@ constexpr simulation_value_t upperToleranceBound(simulation_value_t expectedValu
 }
 
 #pragma region 6x6BottomDrain
-TEST(ParallelHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomDrainFenotype)
+TEST(ParallelHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomDrainSystemLayout)
 {
 
     // prepare
@@ -75,8 +75,8 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomDra
 
     // test
 
-    Fenotype_t fen = Fenotype::createGeneratorFenotype(boardHeight, boardWidth);
-    std::vector<cell_type_t> fenotypes(fen, fen + boardHeight * boardWidth);
+    SystemLayout_t fen = SystemLayout::createGeneratorSystemLayout(boardHeight, boardWidth);
+    std::vector<cell_type_t> systemLayouts(fen, fen + boardHeight * boardWidth);
     delete[] fen;
 
     simulation_value_t *startTemperatures = new simulation_value_t[boardHeight * boardWidth];
@@ -98,7 +98,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomDra
     simulation_value_t *minTemperatures = new simulation_value_t[boardHeight * boardWidth];
     simulation_steps_index_t equilibriumStep;
 
-    auto result = simulator.evaluateGeneration(fenotypes, minTemperatures, &equilibriumStep);
+    auto result = simulator.evaluateGeneration(systemLayouts, minTemperatures, &equilibriumStep);
 
     // assert
 
@@ -118,7 +118,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWith6x6GeneratorFullBottomDra
 #pragma endregion 6x6BottomDrain
 
 #pragma region 6x6Multiple
-TEST(ParallelHeatSimulationTest, EvaluateGenerationWithMultiple6x6GeneratorFullBottomDrainFenotype)
+TEST(ParallelHeatSimulationTest, EvaluateGenerationWithMultiple6x6GeneratorFullBottomDrainSystemLayout)
 {
 
     // prepare
@@ -169,12 +169,12 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithMultiple6x6GeneratorFullB
 
     // test
 
-    Fenotype_t fen = Fenotype::createGeneratorFenotype(boardHeight, boardWidth);
-    std::vector<cell_type_t> fenotypes(fen, fen + boardHeight * boardWidth);
+    SystemLayout_t fen = SystemLayout::createGeneratorSystemLayout(boardHeight, boardWidth);
+    std::vector<cell_type_t> systemLayouts(fen, fen + boardHeight * boardWidth);
 
     for (int i = 0; i < 9; i++)
     {
-        fenotypes.insert(fenotypes.end(), fen, fen + boardHeight * boardWidth);
+        systemLayouts.insert(systemLayouts.end(), fen, fen + boardHeight * boardWidth);
     }
     delete[] fen;
 
@@ -197,7 +197,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithMultiple6x6GeneratorFullB
     simulation_value_t *minTemperatures = new simulation_value_t[boardHeight * boardWidth];
     simulation_steps_index_t equilibriumStep;
 
-    auto result = simulator.evaluateGeneration(fenotypes, minTemperatures, &equilibriumStep);
+    auto result = simulator.evaluateGeneration(systemLayouts, minTemperatures, &equilibriumStep);
 
     // assert
 
@@ -221,7 +221,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithMultiple6x6GeneratorFullB
 #pragma endregion 6x6Multiple
 
 #pragma region 6x6LowDrainAl
-TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorFenotypeLowDrainAlpha)
+TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorSystemLayoutLowDrainAlpha)
 {
     // prepare
     int boardHeight = 6;
@@ -271,8 +271,8 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorFenotypeLowDrain
 
     // test
 
-    Fenotype_t fen = Fenotype::createGeneratorFenotype(boardHeight, boardWidth);
-    std::vector<cell_type_t> fenotypes(fen, fen + boardHeight * boardWidth);
+    SystemLayout_t fen = SystemLayout::createGeneratorSystemLayout(boardHeight, boardWidth);
+    std::vector<cell_type_t> systemLayouts(fen, fen + boardHeight * boardWidth);
     delete[] fen;
 
     simulation_value_t *startTemperatures = new simulation_value_t[boardHeight * boardWidth];
@@ -294,7 +294,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorFenotypeLowDrain
     simulation_value_t *minTemperatures = new simulation_value_t[boardHeight * boardWidth];
     simulation_steps_index_t equilibriumStep;
 
-    auto result = simulator.evaluateGeneration(fenotypes, minTemperatures, &equilibriumStep);
+    auto result = simulator.evaluateGeneration(systemLayouts, minTemperatures, &equilibriumStep);
 
     // assert
 
@@ -315,7 +315,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorFenotypeLowDrain
 #pragma endregion 6x6LowDrainAl
 
 #pragma region 6x6StartTs
-TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorFenotypeAndStartTemperatures)
+TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorSystemLayoutAndStartTemperatures)
 {
     // prepare
     int boardHeight = 6;
@@ -365,8 +365,8 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorFenotypeAndStart
 
     // test
 
-    Fenotype_t fen = Fenotype::createGeneratorFenotype(boardHeight, boardWidth);
-    std::vector<cell_type_t> fenotypes(fen, fen + boardHeight * boardWidth);
+    SystemLayout_t fen = SystemLayout::createGeneratorSystemLayout(boardHeight, boardWidth);
+    std::vector<cell_type_t> systemLayouts(fen, fen + boardHeight * boardWidth);
     delete[] fen;
 
     simulation_value_t *startTemperatures = new simulation_value_t[boardHeight * boardWidth];
@@ -404,7 +404,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorFenotypeAndStart
     simulation_value_t *minTemperatures = new simulation_value_t[boardHeight * boardWidth];
     simulation_steps_index_t equilibriumStep;
 
-    auto result = simulator.evaluateGeneration(fenotypes, minTemperatures, &equilibriumStep);
+    auto result = simulator.evaluateGeneration(systemLayouts, minTemperatures, &equilibriumStep);
 
     // assert
 
@@ -424,7 +424,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithGeneratorFenotypeAndStart
 #pragma endregion 6x6StartTs
 
 #pragma region 16x8LeftStrip
-TEST(ParallelHeatSimulationTest, EvaluateGenerationWithLeftConductorStripFenotype)
+TEST(ParallelHeatSimulationTest, EvaluateGenerationWithLeftConductorStripSystemLayout)
 {
     // prepare
     int boardHeight = 16;
@@ -566,8 +566,8 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithLeftConductorStripFenotyp
 
     // test
 
-    Fenotype_t fen = Fenotype::createLeftConductorStripFenotype(boardHeight, boardWidth, 2);
-    std::vector<cell_type_t> fenotypes(fen, fen + boardHeight * boardWidth);
+    SystemLayout_t fen = SystemLayout::createLeftConductorStripSystemLayout(boardHeight, boardWidth, 2);
+    std::vector<cell_type_t> systemLayouts(fen, fen + boardHeight * boardWidth);
     delete[] fen;
 
     simulation_value_t *startTemperatures = new simulation_value_t[boardHeight * boardWidth];
@@ -590,7 +590,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithLeftConductorStripFenotyp
     simulation_value_t *minTemperatures = new simulation_value_t[boardHeight * boardWidth];
     simulation_steps_index_t equilibriumStep;
 
-    auto result = simulator.evaluateGeneration(fenotypes, minTemperatures, &equilibriumStep);
+    auto result = simulator.evaluateGeneration(systemLayouts, minTemperatures, &equilibriumStep);
 
     // assert
 
@@ -610,7 +610,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithLeftConductorStripFenotyp
 #pragma endregion 16x8LeftStrip
 
 #pragma region 8x8_Isotropy
-TEST(ParallelHeatSimulationTest, Evaluate4RotatedGenerationsWithLeftConductorStripFenotype)
+TEST(ParallelHeatSimulationTest, Evaluate4RotatedGenerationsWithLeftConductorStripSystemLayout)
 {
     // prepare
     int boardLength = 8;
@@ -685,9 +685,9 @@ TEST(ParallelHeatSimulationTest, Evaluate4RotatedGenerationsWithLeftConductorStr
         280,
     };
 
-    const simulation_value_t *expectedLeftwardsMinTemperatures = Fenotype::rotateLeftSquareFenotypeBy90Deg(boardLength, expectedUpwardsMinTemperatures);
-    const simulation_value_t *expectedDownwardsMinTemperatures = Fenotype::rotateLeftSquareFenotypeBy90Deg(boardLength, expectedLeftwardsMinTemperatures);
-    const simulation_value_t *expectedRightwardsMinTemperatures = Fenotype::rotateLeftSquareFenotypeBy90Deg(boardLength, expectedDownwardsMinTemperatures);
+    const simulation_value_t *expectedLeftwardsMinTemperatures = SystemLayout::rotateLeftSquareSystemLayoutBy90Deg(boardLength, expectedUpwardsMinTemperatures);
+    const simulation_value_t *expectedDownwardsMinTemperatures = SystemLayout::rotateLeftSquareSystemLayoutBy90Deg(boardLength, expectedLeftwardsMinTemperatures);
+    const simulation_value_t *expectedRightwardsMinTemperatures = SystemLayout::rotateLeftSquareSystemLayoutBy90Deg(boardLength, expectedDownwardsMinTemperatures);
 
     const simulation_value_t *expectedMinTemperatures[4] = {
         expectedUpwardsMinTemperatures,
@@ -698,23 +698,23 @@ TEST(ParallelHeatSimulationTest, Evaluate4RotatedGenerationsWithLeftConductorStr
 
     // test
 
-    Fenotype_t upFen = Fenotype::createLeftConductorStripFenotype(boardLength, boardLength, 2);
-    std::vector<cell_type_t> upwardsFenotypes(upFen, upFen + boardLength * boardLength);
+    SystemLayout_t upFen = SystemLayout::createLeftConductorStripSystemLayout(boardLength, boardLength, 2);
+    std::vector<cell_type_t> upwardsSystemLayouts(upFen, upFen + boardLength * boardLength);
 
-    Fenotype_t leftFen = Fenotype::rotateLeftSquareFenotypeBy90Deg(boardLength, upFen);
-    std::vector<cell_type_t> leftwardsFenotypes(leftFen, leftFen + boardLength * boardLength);
+    SystemLayout_t leftFen = SystemLayout::rotateLeftSquareSystemLayoutBy90Deg(boardLength, upFen);
+    std::vector<cell_type_t> leftwardsSystemLayouts(leftFen, leftFen + boardLength * boardLength);
 
-    Fenotype_t downFen = Fenotype::rotateLeftSquareFenotypeBy90Deg(boardLength, leftFen);
-    std::vector<cell_type_t> downwardsFenotypes(downFen, downFen + boardLength * boardLength);
+    SystemLayout_t downFen = SystemLayout::rotateLeftSquareSystemLayoutBy90Deg(boardLength, leftFen);
+    std::vector<cell_type_t> downwardsSystemLayouts(downFen, downFen + boardLength * boardLength);
 
-    Fenotype_t rightFen = Fenotype::rotateLeftSquareFenotypeBy90Deg(boardLength, downFen);
-    std::vector<cell_type_t> rightwardsFenotypes(rightFen, rightFen + boardLength * boardLength);
+    SystemLayout_t rightFen = SystemLayout::rotateLeftSquareSystemLayoutBy90Deg(boardLength, downFen);
+    std::vector<cell_type_t> rightwardsSystemLayouts(rightFen, rightFen + boardLength * boardLength);
 
-    std::vector<cell_type_t> fenotypes[4] = {
-        upwardsFenotypes,
-        leftwardsFenotypes,
-        downwardsFenotypes,
-        rightwardsFenotypes,
+    std::vector<cell_type_t> systemLayouts[4] = {
+        upwardsSystemLayouts,
+        leftwardsSystemLayouts,
+        downwardsSystemLayouts,
+        rightwardsSystemLayouts,
     };
 
     delete[] upFen;
@@ -745,7 +745,7 @@ TEST(ParallelHeatSimulationTest, Evaluate4RotatedGenerationsWithLeftConductorStr
     for (int index = 0; index < 4; index++)
     {
 
-        auto result = simulator.evaluateGeneration(fenotypes[index], minTemperatures, &equilibriumStep);
+        auto result = simulator.evaluateGeneration(systemLayouts[index], minTemperatures, &equilibriumStep);
 
         // assert
 
@@ -766,7 +766,7 @@ TEST(ParallelHeatSimulationTest, Evaluate4RotatedGenerationsWithLeftConductorStr
 #pragma endregion 8x8_Isotropy
 
 #pragma region 32x32LeftStrip
-TEST(ParallelHeatSimulationTest, EvaluateGenerationWithBigLeftConductorStripFenotype)
+TEST(ParallelHeatSimulationTest, EvaluateGenerationWithBigLeftConductorStripSystemLayout)
 {
     // prepare
     int boardHeight = 32;
@@ -1803,8 +1803,8 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithBigLeftConductorStripFeno
 
     // test
 
-    Fenotype_t fen = Fenotype::createLeftConductorStripFenotype(boardHeight, boardWidth, 2);
-    std::vector<cell_type_t> fenotypes(fen, fen + boardHeight * boardWidth);
+    SystemLayout_t fen = SystemLayout::createLeftConductorStripSystemLayout(boardHeight, boardWidth, 2);
+    std::vector<cell_type_t> systemLayouts(fen, fen + boardHeight * boardWidth);
     delete[] fen;
 
     simulation_value_t *startTemperatures = new simulation_value_t[boardHeight * boardWidth];
@@ -1827,7 +1827,7 @@ TEST(ParallelHeatSimulationTest, EvaluateGenerationWithBigLeftConductorStripFeno
     simulation_value_t *minTemperatures = new simulation_value_t[boardHeight * boardWidth];
     simulation_steps_index_t equilibriumStep;
 
-    auto result = simulator.evaluateGeneration(fenotypes, minTemperatures, &equilibriumStep);
+    auto result = simulator.evaluateGeneration(systemLayouts, minTemperatures, &equilibriumStep);
 
     // assert
 
