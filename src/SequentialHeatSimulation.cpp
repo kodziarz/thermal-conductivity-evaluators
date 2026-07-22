@@ -6,7 +6,18 @@
 #include <cmath>
 #include <chrono>
 #include "SequentialHeatSimulation.h"
+
+#if defined(__has_include)
+#if __has_include("env.h")
 #include "env.h"
+#endif
+#else
+#if defined(__GNUC__) || defined(__clang__)
+#warning "__has_include is not supported"
+#elif defined(_MSC_VER)
+#pragma message("__has_include is not supported")
+#endif
+#endif
 
 namespace conductivity_evaluators
 {

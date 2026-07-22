@@ -9,8 +9,19 @@
 #include <utility>
 #include "ParallelHeatSimulation.h"
 #include <ctime>
-#include "env.h"
 #include "simulation_kernel_global_stripped_column_wise.hpp" // makes the std::string_view simulation_kernel_global_stripped_column_wise available
+
+#if defined(__has_include)
+#if __has_include("env.h")
+#include "env.h"
+#endif
+#else
+#if defined(__GNUC__) || defined(__clang__)
+#warning "__has_include is not supported"
+#elif defined(_MSC_VER)
+#pragma message("__has_include is not supported")
+#endif
+#endif
 
 // #define KERNEL_DEBUG
 
