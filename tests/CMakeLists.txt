@@ -10,6 +10,15 @@ target_link_libraries(thermal_conductivity_tests
         GTest::gtest_main
 )
 
+add_executable(dump_results
+    dump_results.cpp
+)
+
+target_link_libraries(dump_results
+    PRIVATE
+        thermal_conductivity_evaluators
+)
+
 include(GoogleTest)
 
 gtest_discover_tests(thermal_conductivity_tests)

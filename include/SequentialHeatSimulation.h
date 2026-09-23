@@ -9,13 +9,6 @@
 namespace conductivity_evaluators
 {
 
-    /*
-    Possible optimizations:
-    - better array structure
-    - array with alphas and betas instead of if in the loop
-    - remove double calculations on borders (from both neighbors perspectives)
-    */
-
     const std::string dir = "../heat";
 
     class SequentialHeatSimulation : public Simulation
@@ -25,11 +18,20 @@ namespace conductivity_evaluators
     public:
         SequentialHeatSimulation(int boardHeight, int boardWidth, const SimulationParams &params = SimulationParams{}) : Simulation(boardHeight, boardWidth, params) {};
 
-        simulation_value_t evaluateSystemLayout(const cell_type_t *systemLayout, simulation_value_t **returnedFinalTemperatures = NULL, simulation_steps_index_t *returnedEquilibriumMoment = NULL);
-        std::vector<simulation_value_t> evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures = NULL, simulation_steps_index_t *lastEquilibriumMoment = NULL) override;
+        simulation_value_t evaluateSystemLayout(
+            const simulation_value_t *k,
+            const simulation_value_t *invC,
+            const simulation_value_t *qGen,
+            simulation_value_t **returnedFinalTemperatures = NULL,
+            simulation_steps_index_t *returnedEquilibriumMoment = NULL);
 
-    protected:
-        simulation_value_t calculateMutualAlpha(cell_type_t neighbor_type, cell_type_t considered_cell_type);
+        std::vector<simulation_value_t> evaluateGeneration(
+            const simulation_value_t *k_values,
+            const simulation_value_t *invC_values,
+            const simulation_value_t *qGen_values,
+            int individualsNumber,
+            simulation_value_t *minFinalTemperatures = NULL,
+            simulation_steps_index_t *lastEquilibriumMoment = NULL) override;
     };
 
 }

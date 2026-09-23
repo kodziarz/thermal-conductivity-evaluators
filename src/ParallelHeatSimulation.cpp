@@ -126,26 +126,23 @@ namespace conductivity_evaluators
 
     ParallelHeatSimulation::~ParallelHeatSimulation()
     {
-        // clReleaseMemObject(bufInBoards);
-        // clReleaseMemObject(bufOutStripMaxTs);
-        // clReleaseMemObject(bufInnerForegoingTemperatures);
-        // clReleaseMemObject(bufInnerNewTemperatures);
-        // clReleaseKernel(kernel);
         clReleaseProgram(program);
-        // clReleaseCommandQueue(queue);
         clReleaseContext(context);
     }
 
-    std::vector<simulation_value_t> ParallelHeatSimulation::evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures, simulation_steps_index_t *lastEquilibriumMoment)
+    std::vector<simulation_value_t> ParallelHeatSimulation::evaluateGeneration(
+        const simulation_value_t *k_values,
+        const simulation_value_t *invC_values,
+        const simulation_value_t *qGen_values,
+        int individualsNumber,
+        simulation_value_t *minFinalTemperatures,
+        simulation_steps_index_t *lastEquilibriumMoment)
     {
 #ifdef BENCHMARK
         std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
 #endif
 
-        int board_size = boardHeight * boardWidth;
-        int solutionsNumber = systemLayouts.size() / board_size;
-
-        if (solutionsNumber <= 0)
+        if (individualsNumber <= 0)
         {
             std::cout << "evaluateGeneration() received an empty list of solutions..." << std::endl;
             return std::vector<simulation_value_t>(0);
@@ -153,7 +150,7 @@ namespace conductivity_evaluators
 
         simulation_value_t *minTs;
         simulation_steps_index_t eqMoment;
-        std::vector<simulation_value_t> maxTs = runSimulationKernel(systemLayouts, solutionsNumber, &minTs, &eqMoment);
+        std::vector<simulation_value_t> maxTs = runSimulationKernel(k_values, invC_values, qGen_values, individualsNumber, &minTs, &eqMoment);
 
         if (minFinalTemperatures != NULL)
         {
@@ -182,9 +179,16 @@ namespace conductivity_evaluators
     }
 
     std::vector<simulation_value_t> ParallelHeatSimulation::runSimulationKernel(
-        const std::vector<cell_type_t> &boards, int individualsNumber, simulation_value_t **returnedMinFinalTemperatures, simulation_steps_index_t *returnedLastEquilibriumMoment)
+        const simulation_value_t *k_values,
+        const simulation_value_t *invC_values,
+        const simulation_value_t *qGen_values,
+        int individualsNumber,
+        simulation_value_t **returnedMinFinalTemperatures,
+        simulation_steps_index_t *returnedLastEquilibriumMoment)
     {
         timestamp start, stop;
+        const int boardSize = boardHeight * boardWidth;
+        const int totalCells = individualsNumber * boardSize;
         std::vector<simulation_value_t> maxTemperatures(individualsNumber);
         const int globalStripsNumber = individualsNumber * individualWidth * stripsPerColumn;
         const int stripsPerIndividual = individualWidth * stripsPerColumn;
@@ -206,29 +210,40 @@ namespace conductivity_evaluators
         start = std::chrono::high_resolution_clock::now();
 #endif
 
-        cl_mem bufInBoards = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                            boards.size() * sizeof(cell_type_t), (void *)boards.data(), &status);
-
-        if (status != CL_SUCCESS)
+        std::vector<simulation_value_t> startTs(totalCells);
+        for (int i = 0; i < individualsNumber; i++)
         {
-            printf("Boards input buffer allocation failed with status: %i\n", status);
-            throw std::runtime_error("Buffer allocation error");
-        }
-
-        std::vector<simulation_value_t> startTs(boards.size());
-        {
-            int boardSize = boardHeight * boardWidth;
-            for (int i = 0; i < individualsNumber; i++)
-            {
-                std::memcpy(startTs.data() + i * boardSize, startTemperatures, boardSize * sizeof(simulation_value_t));
-            }
+            std::memcpy(startTs.data() + i * boardSize, startTemperatures, boardSize * sizeof(simulation_value_t));
         }
         cl_mem bufInStartTemperatures = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                                       startTs.size() * sizeof(simulation_value_t), (void *)startTs.data(), &status);
-
+                                                       totalCells * sizeof(simulation_value_t), (void *)startTs.data(), &status);
         if (status != CL_SUCCESS)
         {
             printf("Start temperatures input buffer allocation failed with status: %i\n", status);
+            throw std::runtime_error("Buffer allocation error");
+        }
+
+        cl_mem bufK = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                     totalCells * sizeof(simulation_value_t), (void *)k_values, &status);
+        if (status != CL_SUCCESS)
+        {
+            printf("K values buffer allocation failed with status: %i\n", status);
+            throw std::runtime_error("Buffer allocation error");
+        }
+
+        cl_mem bufInvC = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                        totalCells * sizeof(simulation_value_t), (void *)invC_values, &status);
+        if (status != CL_SUCCESS)
+        {
+            printf("InvC values buffer allocation failed with status: %i\n", status);
+            throw std::runtime_error("Buffer allocation error");
+        }
+
+        cl_mem bufQGen = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                        totalCells * sizeof(simulation_value_t), (void *)qGen_values, &status);
+        if (status != CL_SUCCESS)
+        {
+            printf("QGen values buffer allocation failed with status: %i\n", status);
             throw std::runtime_error("Buffer allocation error");
         }
 
@@ -236,18 +251,16 @@ namespace conductivity_evaluators
 
         cl_mem bufOutStripMaxTs = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                                  stripsMaxTs.size() * sizeof(simulation_value_t), nullptr, &status);
-
         if (status != CL_SUCCESS)
         {
             printf("Max temperatures output buffer allocation failed with status: %i\n", status);
             throw std::runtime_error("Buffer allocation error");
         }
 
-        std::vector<simulation_value_t> finalTs(boards.size());
+        std::vector<simulation_value_t> finalTs(totalCells);
 
         cl_mem bufOutFinalTs = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                               finalTs.size() * sizeof(simulation_value_t), nullptr, &status);
-
         if (status != CL_SUCCESS)
         {
             printf("Min temperatures output buffer allocation failed with status: %i\n", status);
@@ -258,7 +271,6 @@ namespace conductivity_evaluators
 
         cl_mem bufOutStripEquilibriumMoments = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                                                               stripsEquilibriumMoments.size() * sizeof(simulation_steps_index_t), nullptr, &status);
-
         if (status != CL_SUCCESS)
         {
             printf("Equilibrium moments output buffer allocation failed with status: %i\n", status);
@@ -266,8 +278,7 @@ namespace conductivity_evaluators
         }
 
         cl_mem bufInnerForegoingTemperatures = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                                              boards.size() * sizeof(simulation_value_t), nullptr, &status);
-
+                                                              totalCells * sizeof(simulation_value_t), nullptr, &status);
         if (status != CL_SUCCESS)
         {
             printf("Foregoing temperatures buffer allocation failed with status: %i\n", status);
@@ -275,8 +286,7 @@ namespace conductivity_evaluators
         }
 
         cl_mem bufInnerNewTemperatures = clCreateBuffer(context, CL_MEM_READ_WRITE,
-                                                        boards.size() * sizeof(simulation_value_t), nullptr, &status);
-
+                                                        totalCells * sizeof(simulation_value_t), nullptr, &status);
         if (status != CL_SUCCESS)
         {
             printf("New temperatures buffer allocation failed with status: %i\n", status);
@@ -307,13 +317,15 @@ namespace conductivity_evaluators
         // 7. Set Kernel Arguments
         // ----------------------------------------------------
         int arg_index = 0;
-        clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInBoards);
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInStartTemperatures);
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutStripMaxTs);
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutFinalTs);
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutStripEquilibriumMoments);
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInnerForegoingTemperatures);
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInnerNewTemperatures);
+        clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufK);
+        clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufInvC);
+        clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufQGen);
 
 #ifdef KERNEL_DEBUG
         clSetKernelArg(kernel, arg_index++, sizeof(cl_mem), &bufOutDebug);
@@ -394,7 +406,7 @@ namespace conductivity_evaluators
 #endif
 
         // ----------------------------------------------------
-        // 10. Print output
+        // 10. Aggregate results
         // ----------------------------------------------------
 
 #ifdef DEBUG
@@ -417,8 +429,8 @@ namespace conductivity_evaluators
         start = std::chrono::high_resolution_clock::now();
 #endif
         // aggregate obtained parameters
-        simulation_value_t *minTemperatures = new simulation_value_t[boardHeight * boardWidth];
-        std::memcpy(minTemperatures, finalTs.data(), boardHeight * boardWidth * sizeof(simulation_value_t));
+        simulation_value_t *minTemperatures = new simulation_value_t[boardSize];
+        std::memcpy(minTemperatures, finalTs.data(), boardSize * sizeof(simulation_value_t));
 
         simulation_steps_index_t lastEquilibriumMoment = stripsEquilibriumMoments[0];
         for (int i = 0; i < individualsNumber; ++i)
@@ -433,14 +445,13 @@ namespace conductivity_evaluators
             }
             maxTemperatures[i] = maxT;
 
-            int passedIndividuallsCells = i * boardHeight * boardWidth;
-            for (int cellIndex = 0; cellIndex < boardHeight * boardWidth; cellIndex++)
+            int passedIndividualsCells = i * boardSize;
+            for (int cellIndex = 0; cellIndex < boardSize; cellIndex++)
             {
-                minTemperatures[cellIndex] = std::min(minTemperatures[cellIndex], finalTs[passedIndividuallsCells + cellIndex]);
+                minTemperatures[cellIndex] = std::min(minTemperatures[cellIndex], finalTs[passedIndividualsCells + cellIndex]);
             }
         }
 #ifdef PARALLEL_SIMULATION_BENCHMARK
-        std::cout << "Minimal temperature in equilibrium state was: " << minTemperature << " K" << std::endl;
         std::cout << "Finding equilibrium took: " << lastEquilibriumMoment << " steps" << std::endl;
         stop = std::chrono::high_resolution_clock::now();
         std::cout << "Finding individuals maxima took " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count() << std::endl;
@@ -460,8 +471,10 @@ namespace conductivity_evaluators
 #ifdef PARALLEL_SIMULATION_BENCHMARK
         start = std::chrono::high_resolution_clock::now();
 #endif
-        clReleaseMemObject(bufInBoards);
         clReleaseMemObject(bufInStartTemperatures);
+        clReleaseMemObject(bufK);
+        clReleaseMemObject(bufInvC);
+        clReleaseMemObject(bufQGen);
         clReleaseMemObject(bufOutStripMaxTs);
         clReleaseMemObject(bufOutFinalTs);
         clReleaseMemObject(bufOutStripEquilibriumMoments);
@@ -475,8 +488,7 @@ namespace conductivity_evaluators
 
 #ifdef PARALLEL_SIMULATION_BENCHMARK
         stop = std::chrono::high_resolution_clock::now();
-        std::cout << "Releasing kernel took " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count()
-                  << std::endl;
+        std::cout << "Releasing kernel took " << std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count() << std::endl;
 #endif
 
         *returnedMinFinalTemperatures = minTemperatures;
@@ -492,17 +504,12 @@ namespace conductivity_evaluators
 
     inline void ParallelHeatSimulation::buildProgram()
     {
-        // std::string source = read_file("kernels/simulation_kernel_global_column_wise.cl");
         std::string source = loadKernel(
             kernels::simulation_kernel_global_stripped_column_wise,
             simulationSteps,
             ETA,
-            GENERATOR_ALPHA,
-            GENERATOR_BETA,
-            CONDUCTOR_ALPHA,
-            CONDUCTOR_BETA,
-            DRAIN_ALPHA,
             delta_time,
+            drainTemperature,
             boardHeight, boardWidth, stripLength);
         const char *src = source.c_str();
 
