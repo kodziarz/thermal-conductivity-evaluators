@@ -24,6 +24,29 @@ constexpr simulation_value_t upperToleranceBound(simulation_value_t expectedValu
     return expectedValue + std::fabs(expectedValue) * eta;
 }
 
+static void createPerCellArrays(
+    const int *layout, int size,
+    simulation_value_t genK, simulation_value_t genInvC, simulation_value_t genQGen,
+    simulation_value_t condK, simulation_value_t condInvC, simulation_value_t condQGen,
+    simulation_value_t adiaK, simulation_value_t adiaInvC, simulation_value_t adiaQGen,
+    simulation_value_t drainK, simulation_value_t drainInvC, simulation_value_t drainQGen,
+    std::vector<simulation_value_t> &k_out,
+    std::vector<simulation_value_t> &invC_out,
+    std::vector<simulation_value_t> &qGen_out)
+{
+    k_out.resize(size);
+    invC_out.resize(size);
+    qGen_out.resize(size);
+
+    SystemLayout::MaterialProperties genProps = {genK, genInvC, genQGen};
+    SystemLayout::MaterialProperties condProps = {condK, condInvC, condQGen};
+    SystemLayout::MaterialProperties adiaProps = {adiaK, adiaInvC, adiaQGen};
+    SystemLayout::MaterialProperties drainProps = {drainK, drainInvC, drainQGen};
+
+    SystemLayout::cellTypeLayoutToProperties(layout, size, condProps, genProps, adiaProps, drainProps,
+                                            k_out.data(), invC_out.data(), qGen_out.data());
+}
+
 #pragma region 6x6BottomDrain
 TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomDrainSystemLayout)
 {
@@ -33,52 +56,20 @@ TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomD
     int boardWidth = 6;
 
     const simulation_value_t usedEta = TEST_REL_ERROR / 1000;
-    // const simulation_value_t expectedFitness = -280.672727;
-    // const simulation_steps_index_t expectedEquilibriumMoment = 1'331;
-    // const simulation_value_t expectedMinTemperatures[boardHeight * boardWidth] = {
-    //     280,
-    //     280,
-    //     280,
-    //     280,
-    //     280,
-    //     280,
-    //     280,
-    //     280.672727,
-    //     280.672727,
-    //     280.672727,
-    //     280.672727,
-    //     280,
-    //     280,
-    //     280.572727,
-    //     280.572727,
-    //     280.572727,
-    //     280.572727,
-    //     280,
-    //     280,
-    //     280.372727,
-    //     280.372727,
-    //     280.372727,
-    //     280.372727,
-    //     280,
-    //     280,
-    //     280.072727,
-    //     280.072727,
-    //     280.072727,
-    //     280.072727,
-    //     280,
-    //     280,
-    //     280,
-    //     280,
-    //     280,
-    //     280,
-    //     280,
-    // };
 
     // test
 
     SystemLayout_t fen = SystemLayout::createGeneratorSystemLayout(boardHeight, boardWidth);
-    std::vector<cell_type_t> systemLayouts(fen, fen + boardHeight * boardWidth);
+    std::vector<int> systemLayouts(fen, fen + boardHeight * boardWidth);
     delete[] fen;
+
+    std::vector<simulation_value_t> kValues, invCValues, qGenValues;
+    createPerCellArrays(systemLayouts.data(), boardHeight * boardWidth,
+                        10, 1.0, 1,
+                        100, 1.0, 0,
+                        0, 1.0, 0,
+                        100, 0, 0,
+                        kValues, invCValues, qGenValues);
 
     simulation_value_t *startTemperatures = new simulation_value_t[boardHeight * boardWidth];
     std::fill_n(startTemperatures, boardHeight * boardWidth, (simulation_value_t)280);
@@ -88,12 +79,10 @@ TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomD
         .startTemperatures = startTemperatures,
         .drainTemperature = 280,
         .delta_time = 0.003,
-        .DRAIN_ALPHA = 100,
-        .CONDUCTOR_ALPHA = 100,
-        .GENERATOR_ALPHA = 10,
-        .CONDUCTOR_BETA = 0,
-        .GENERATOR_BETA = 1,
-        .ETA = usedEta};
+        .ETA = usedEta,
+        .k_values = kValues.data(),
+        .invC_values = invCValues.data(),
+        .qGen_values = qGenValues.data()};
 
     std::ofstream seqFile("seqTsRegister.txt");
     std::ofstream parFile("parTsRegister.txt");
@@ -116,9 +105,9 @@ TEST(HeatSimulationTestComparison, EvaluateGenerationWith6x6GeneratorFullBottomD
             sequentialSimulator.setSimulationParams(testParams);
             parallelSimulator.setSimulationParams(testParams);
 
-            auto sequentialResult = sequentialSimulator.evaluateGeneration(systemLayouts, sequentialMinTemperatures, &sequentialEquilibriumStep);
+            auto sequentialResult = sequentialSimulator.evaluateGeneration(kValues.data(), invCValues.data(), qGenValues.data(), 1, sequentialMinTemperatures, &sequentialEquilibriumStep);
 
-            auto parallelResult = parallelSimulator.evaluateGeneration(systemLayouts, parallelMinTemperatures, &parallelEquilibriumStep);
+            auto parallelResult = parallelSimulator.evaluateGeneration(kValues.data(), invCValues.data(), qGenValues.data(), 1, parallelMinTemperatures, &parallelEquilibriumStep);
 
             // assert
 

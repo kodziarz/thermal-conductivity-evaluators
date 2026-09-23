@@ -8,11 +8,7 @@ namespace conductivity_evaluators
         simulationSteps = params.simulationSteps;
         drainTemperature = params.drainTemperature;
         delta_time = params.delta_time;
-        DRAIN_ALPHA = params.DRAIN_ALPHA;
-        CONDUCTOR_ALPHA = params.CONDUCTOR_ALPHA;
-        GENERATOR_ALPHA = params.GENERATOR_ALPHA;
-        CONDUCTOR_BETA = params.CONDUCTOR_BETA;
-        GENERATOR_BETA = params.GENERATOR_BETA;
+        ETA = params.ETA;
 
         if (params.startTemperatures != NULL)
         {
@@ -20,6 +16,20 @@ namespace conductivity_evaluators
             {
                 startTemperatures[i] = params.startTemperatures[i];
             }
+        }
+
+        int boardSize = boardHeight * boardWidth;
+        if (params.k_values != NULL)
+        {
+            std::memcpy(k_values, params.k_values, boardSize * sizeof(simulation_value_t));
+        }
+        if (params.invC_values != NULL)
+        {
+            std::memcpy(invC_values, params.invC_values, boardSize * sizeof(simulation_value_t));
+        }
+        if (params.qGen_values != NULL)
+        {
+            std::memcpy(qGen_values, params.qGen_values, boardSize * sizeof(simulation_value_t));
         }
     }
 

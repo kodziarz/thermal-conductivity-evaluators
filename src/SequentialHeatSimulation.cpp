@@ -47,7 +47,13 @@ namespace conductivity_evaluators
         }
     }
 
-    std::vector<simulation_value_t> SequentialHeatSimulation::evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures, simulation_steps_index_t *lastEquilibriumMoment)
+    std::vector<simulation_value_t> SequentialHeatSimulation::evaluateGeneration(
+        const simulation_value_t *k_values,
+        const simulation_value_t *invC_values,
+        const simulation_value_t *qGen_values,
+        int individualsNumber,
+        simulation_value_t *minFinalTemperatures,
+        simulation_steps_index_t *lastEquilibriumMoment)
     {
 #ifdef BENCHMARK
         std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
@@ -67,15 +73,20 @@ namespace conductivity_evaluators
             *lastEquilibriumMoment = 0;
         }
 
-        for (const cell_type_t *systemLayout = systemLayouts.data(); systemLayout < systemLayouts.data() + systemLayouts.size(); systemLayout += boardHeight * boardWidth)
+        int boardSize = boardHeight * boardWidth;
+        for (int ind = 0; ind < individualsNumber; ind++)
         {
+            const simulation_value_t *indK = k_values + ind * boardSize;
+            const simulation_value_t *indInvC = invC_values + ind * boardSize;
+            const simulation_value_t *indQGen = qGen_values + ind * boardSize;
+
             simulation_value_t *finalTemperatures;
             simulation_steps_index_t equilibriumMoment = 0;
-            results.push_back(evaluateSystemLayout(systemLayout, &finalTemperatures, &equilibriumMoment));
+            results.push_back(evaluateSystemLayout(indK, indInvC, indQGen, &finalTemperatures, &equilibriumMoment));
 
             if (minFinalTemperatures != NULL)
             {
-                for (int i = 0; i < boardHeight * boardWidth; i++)
+                for (int i = 0; i < boardSize; i++)
                 {
                     minFinalTemperatures[i] = std::min(minFinalTemperatures[i], finalTemperatures[i]);
                 }
@@ -96,9 +107,13 @@ namespace conductivity_evaluators
         return results;
     }
 
-    simulation_value_t SequentialHeatSimulation::evaluateSystemLayout(const cell_type_t *systemLayout, simulation_value_t **returnedFinalTemperatures, simulation_steps_index_t *returnedEquilibriumMoment)
+    simulation_value_t SequentialHeatSimulation::evaluateSystemLayout(
+        const simulation_value_t *k,
+        const simulation_value_t *invC,
+        const simulation_value_t *qGen,
+        simulation_value_t **returnedFinalTemperatures,
+        simulation_steps_index_t *returnedEquilibriumMoment)
     {
-        // simulation_value_t *inputTs = new simulation_value_t[boardHeight * boardWidth];
         std::vector<simulation_value_t> inputTs = std::vector<simulation_value_t>(boardHeight * boardWidth);
         simulation_value_t *outputTs = new simulation_value_t[boardHeight * boardWidth];
 
@@ -121,23 +136,26 @@ namespace conductivity_evaluators
                     const simulation_value_t currentT = inputTs[cellIndex];
                     simulation_value_t flow = 0;
 
-                    simulation_value_t beta = GENERATOR_BETA;
-                    if (systemLayout[cellIndex] != Cell::GENERATOR)
-                    {
-                        beta = CONDUCTOR_BETA;
-                    }
+                    simulation_value_t alpha_current = k[cellIndex] * invC[cellIndex];
+                    simulation_value_t beta = qGen[cellIndex] * invC[cellIndex];
+
                     // order of neighbors: bottom, up, right, left
+                    simulation_value_t alpha_neighbor;
+                    alpha_neighbor = k[cellIndex + boardWidth] * invC[cellIndex + boardWidth];
                     flow += (inputTs[cellIndex + boardWidth] - currentT) *
-                            calculateMutualAlpha(systemLayout[cellIndex], systemLayout[cellIndex + boardWidth]);
+                            ((k[cellIndex] == 0 || k[cellIndex + boardWidth] == 0) ? 0 : (alpha_current + alpha_neighbor) / 2);
 
+                    alpha_neighbor = k[cellIndex - boardWidth] * invC[cellIndex - boardWidth];
                     flow += (inputTs[cellIndex - boardWidth] - currentT) *
-                            calculateMutualAlpha(systemLayout[cellIndex], systemLayout[cellIndex - boardWidth]);
+                            ((k[cellIndex] == 0 || k[cellIndex - boardWidth] == 0) ? 0 : (alpha_current + alpha_neighbor) / 2);
 
+                    alpha_neighbor = k[cellIndex + 1] * invC[cellIndex + 1];
                     flow += (inputTs[cellIndex + 1] - currentT) *
-                            calculateMutualAlpha(systemLayout[cellIndex], systemLayout[cellIndex + 1]);
+                            ((k[cellIndex] == 0 || k[cellIndex + 1] == 0) ? 0 : (alpha_current + alpha_neighbor) / 2);
 
+                    alpha_neighbor = k[cellIndex - 1] * invC[cellIndex - 1];
                     flow += (inputTs[cellIndex - 1] - currentT) *
-                            calculateMutualAlpha(systemLayout[cellIndex], systemLayout[cellIndex - 1]);
+                            ((k[cellIndex] == 0 || k[cellIndex - 1] == 0) ? 0 : (alpha_current + alpha_neighbor) / 2);
 
                     simulation_value_t temperatureIncrease = delta_time * (flow + beta);
                     outputTs[cellIndex] += temperatureIncrease;
@@ -152,6 +170,16 @@ namespace conductivity_evaluators
                     maxT = std::max(maxT, outputTs[cellIndex]);
                 }
             }
+
+            // Reset DRAIN cells (invC == 0) to drainTemperature
+            for (int idx = 0; idx < boardHeight * boardWidth; idx++)
+            {
+                if (invC[idx] == 0)
+                {
+                    outputTs[idx] = drainTemperature;
+                }
+            }
+
             std::memcpy(inputTs.data(), outputTs, boardHeight * boardWidth * sizeof(simulation_value_t));
         }
 
@@ -163,48 +191,8 @@ namespace conductivity_evaluators
         {
             delete[] outputTs;
         }
-        // delete[] inputTs;
 
         return -maxT;
-    }
-
-    simulation_value_t SequentialHeatSimulation::calculateMutualAlpha(cell_type_t considered_cell_type, cell_type_t neighbor_type)
-    {
-        simulation_value_t considered_cell_alpha;
-        switch (considered_cell_type)
-        {
-        case Cell::DRAIN:
-        case Cell::ADIABATIC:
-            return 0;
-            break;
-        case Cell::GENERATOR:
-            considered_cell_alpha = GENERATOR_ALPHA;
-            break;
-        case Cell::CONDUCTOR:
-            considered_cell_alpha = CONDUCTOR_ALPHA;
-            break;
-        default:
-            throw std::runtime_error(std::string("calculateMutualAlpha(): unexpected considered_cell_alpha type value was received: ") + std::to_string(considered_cell_type));
-            break;
-        }
-        switch (neighbor_type)
-        {
-        case Cell::ADIABATIC:
-            return 0;
-            break;
-        case Cell::DRAIN:
-            return (considered_cell_alpha + DRAIN_ALPHA) / 2;
-            break;
-        case Cell::GENERATOR:
-            return (considered_cell_alpha + GENERATOR_ALPHA) / 2;
-            break;
-        case Cell::CONDUCTOR:
-            return (considered_cell_alpha + CONDUCTOR_ALPHA) / 2;
-            break;
-        default:
-            throw std::runtime_error(std::string("calculateMutualAlpha(): unexpected neighbor_type type value was received: ") + std::to_string(neighbor_type));
-            break;
-        }
     }
 
 }

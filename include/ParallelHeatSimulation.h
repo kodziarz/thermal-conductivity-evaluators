@@ -6,18 +6,19 @@
 namespace conductivity_evaluators
 {
 
-    /*
-    Possible optimizations:
-    - strips
-    */
-
     class ParallelHeatSimulation : public Simulation
     {
     public:
         ParallelHeatSimulation(int boardHeight, int boardWidth, const SimulationParams &params = SimulationParams{});
         ~ParallelHeatSimulation();
 
-        std::vector<simulation_value_t> evaluateGeneration(const std::vector<cell_type_t> &systemLayouts, simulation_value_t *minFinalTemperatures = NULL, simulation_steps_index_t *lastEquilibriumMoment = NULL) override;
+        std::vector<simulation_value_t> evaluateGeneration(
+            const simulation_value_t *k_values,
+            const simulation_value_t *invC_values,
+            const simulation_value_t *qGen_values,
+            int individualsNumber,
+            simulation_value_t *minFinalTemperatures = NULL,
+            simulation_steps_index_t *lastEquilibriumMoment = NULL) override;
 
         void setSimulationParams(const SimulationParams &params) override;
 
@@ -33,7 +34,12 @@ namespace conductivity_evaluators
         inline int calculateStripLength(int maxWorkGroupSize);
 
         inline std::vector<simulation_value_t> runSimulationKernel(
-            const std::vector<cell_type_t> &boards, int individualsNumber, simulation_value_t **returnedMinFinalTemperatures, simulation_steps_index_t *returnedLastEquilibriumMoment);
+            const simulation_value_t *k_values,
+            const simulation_value_t *invC_values,
+            const simulation_value_t *qGen_values,
+            int individualsNumber,
+            simulation_value_t **returnedMinFinalTemperatures,
+            simulation_steps_index_t *returnedLastEquilibriumMoment);
     };
 
 }

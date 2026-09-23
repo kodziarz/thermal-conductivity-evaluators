@@ -40,12 +40,8 @@ namespace conductivity_evaluators
     std::string loadKernel(const std::string_view kernel_code,
                            int stepsNumber,
                            simulation_value_t ETA,
-                           simulation_value_t generatorAlpha,
-                           simulation_value_t generatorBeta,
-                           simulation_value_t conductorAlpha,
-                           simulation_value_t conductorBeta,
-                           simulation_value_t drainAlpha,
                            simulation_value_t deltaTime,
+                           simulation_value_t drainTemperature,
                            int height,
                            int width,
                            int stripLength)
@@ -56,12 +52,8 @@ namespace conductivity_evaluators
         std::ostringstream sstream;
         sstream << ETA;
         setKernelParam(parametrized_kernel_code, "#define ETA 0", "#define ETA " + sstream.str());
-        setKernelParam(parametrized_kernel_code, "#define GENERATOR_ALPHA 0", "#define GENERATOR_ALPHA " + std::to_string(generatorAlpha));
-        setKernelParam(parametrized_kernel_code, "#define GENERATOR_BETA 0", "#define GENERATOR_BETA " + std::to_string(generatorBeta));
-        setKernelParam(parametrized_kernel_code, "#define CONDUCTOR_ALPHA 0", "#define CONDUCTOR_ALPHA " + std::to_string(conductorAlpha));
-        setKernelParam(parametrized_kernel_code, "#define CONDUCTOR_BETA 0", "#define CONDUCTOR_BETA " + std::to_string(conductorBeta));
-        setKernelParam(parametrized_kernel_code, "#define DRAIN_ALPHA 0", "#define DRAIN_ALPHA " + std::to_string(drainAlpha));
         setKernelParam(parametrized_kernel_code, "#define DELTA_TIME 0", "#define DELTA_TIME " + std::to_string(deltaTime));
+        setKernelParam(parametrized_kernel_code, "#define DRAIN_TEMPERATURE 0", "#define DRAIN_TEMPERATURE " + std::to_string(drainTemperature));
         setKernelParam(parametrized_kernel_code, "#define WIDTH 0", "#define WIDTH " + std::to_string(width));
         setKernelParam(parametrized_kernel_code, "#define HEIGHT 0", "#define HEIGHT " + std::to_string(height));
         setKernelParam(parametrized_kernel_code, "#define STRIP_LENGTH 1", "#define STRIP_LENGTH " + std::to_string(stripLength));

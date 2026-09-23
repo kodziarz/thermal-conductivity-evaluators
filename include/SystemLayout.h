@@ -3,29 +3,72 @@
 #include <vector>
 
 #include "Types.h"
-// enum Cell
-// {
-//     CONDUCTOR = 0,
-//     GENERATOR = 1,
-//     ADIABATIC = 2,
-//     DRAIN = 3
-// };
 
-// using cell_type_t = int;
-
-using SystemLayout_t = cell_type_t *;
+using SystemLayout_t = int *;
 
 namespace SystemLayout
 {
     using namespace conductivity_evaluators;
 
+    enum CellType
+    {
+        CONDUCTOR = 0,
+        GENERATOR = 1,
+        ADIABATIC = 2,
+        DRAIN = 3
+    };
+
+    struct MaterialProperties
+    {
+        simulation_value_t k;
+        simulation_value_t invC;
+        simulation_value_t qGen;
+    };
+
+    inline void cellTypeLayoutToProperties(
+        const int *layout, int size,
+        const MaterialProperties &conductorProps,
+        const MaterialProperties &generatorProps,
+        const MaterialProperties &adiabaticProps,
+        const MaterialProperties &drainProps,
+        simulation_value_t *k_out,
+        simulation_value_t *invC_out,
+        simulation_value_t *qGen_out)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            MaterialProperties props;
+            switch (layout[i])
+            {
+            case CONDUCTOR:
+                props = conductorProps;
+                break;
+            case GENERATOR:
+                props = generatorProps;
+                break;
+            case ADIABATIC:
+                props = adiabaticProps;
+                break;
+            case DRAIN:
+                props = drainProps;
+                break;
+            default:
+                props = {0, 0, 0};
+                break;
+            }
+            k_out[i] = props.k;
+            invC_out[i] = props.invC;
+            qGen_out[i] = props.qGen;
+        }
+    }
+
     inline SystemLayout_t createGeneratorSystemLayout(int boardHeight, int boardWidth)
     {
-        cell_type_t *result = new cell_type_t[boardHeight * boardWidth];
+        int *result = new int[boardHeight * boardWidth];
 
         // initialize with generator
         for (int i = 0; i < boardHeight * boardWidth; ++i)
-            result[i] = Cell::GENERATOR;
+            result[i] = GENERATOR;
 
         // top row and side columns -> adiabatic
         for (int row = 0; row < boardHeight - 1; row++)
@@ -34,7 +77,7 @@ namespace SystemLayout
             {
                 if (row == 0 || column == 0 || column == boardWidth - 1)
                 {
-                    result[row * boardWidth + column] = Cell::ADIABATIC;
+                    result[row * boardWidth + column] = ADIABATIC;
                 }
             }
         }
@@ -44,11 +87,11 @@ namespace SystemLayout
         {
             if (column == 0 || column == boardWidth - 1)
             {
-                result[(boardHeight - 1) * boardWidth + column] = Cell::ADIABATIC;
+                result[(boardHeight - 1) * boardWidth + column] = ADIABATIC;
             }
             else
             {
-                result[(boardHeight - 1) * boardWidth + column] = Cell::DRAIN;
+                result[(boardHeight - 1) * boardWidth + column] = DRAIN;
             }
         }
 
@@ -57,25 +100,25 @@ namespace SystemLayout
 
     inline SystemLayout_t createLeftConductorStripSystemLayout(int boardHeight, int boardWidth, int stripBredth = 1)
     {
-        cell_type_t *result = new cell_type_t[boardHeight * boardWidth];
+        int *result = new int[boardHeight * boardWidth];
 
         // initialize with generator
         for (int i = 0; i < boardHeight * boardWidth; ++i)
-            result[i] = Cell::GENERATOR;
+            result[i] = GENERATOR;
 
         // top row and side columns -> adiabatic
         // left-most rows -> conductors
         for (int row = 0; row < boardHeight - 1; row++)
-        { // without last row
+        {
             for (int column = 0; column < boardWidth; column++)
             {
                 if (row == 0 || column == 0 || column == boardWidth - 1)
                 {
-                    result[row * boardWidth + column] = Cell::ADIABATIC;
+                    result[row * boardWidth + column] = ADIABATIC;
                 }
                 else if (column <= stripBredth)
                 {
-                    result[row * boardWidth + column] = Cell::CONDUCTOR;
+                    result[row * boardWidth + column] = CONDUCTOR;
                 }
             }
         }
@@ -85,11 +128,11 @@ namespace SystemLayout
         {
             if (column == 0 || column == boardWidth - 1)
             {
-                result[(boardHeight - 1) * boardWidth + column] = Cell::ADIABATIC;
+                result[(boardHeight - 1) * boardWidth + column] = ADIABATIC;
             }
             else
             {
-                result[(boardHeight - 1) * boardWidth + column] = Cell::DRAIN;
+                result[(boardHeight - 1) * boardWidth + column] = DRAIN;
             }
         }
 

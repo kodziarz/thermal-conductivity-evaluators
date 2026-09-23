@@ -17,12 +17,8 @@ namespace conductivity_evaluators
     std::string loadKernel(const std::string_view kernel_code,
                            int stepsNumber,
                            simulation_value_t ETA,
-                           simulation_value_t generatorAlpha,
-                           simulation_value_t generatorBeta,
-                           simulation_value_t conductorAlpha,
-                           simulation_value_t conductorBeta,
-                           simulation_value_t drainAlpha,
                            simulation_value_t deltaTime,
+                           simulation_value_t drainTemperature,
                            int height,
                            int width,
                            int stripLength);
